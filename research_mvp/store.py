@@ -29,6 +29,7 @@ from research_mvp.local_runtime import (
     get_backend,
     get_registry,
 )
+from research_mvp.runtime_cli import DEFAULT_CODEX_COMMAND, DEFAULT_CONFIG_PATH, load_config
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_DATA_ROOT = REPO_ROOT / ".research-mvp-data"
@@ -43,6 +44,13 @@ ROLE_ORDER = {
     "trainer": 1,
 }
 logger = configure_logging(DEFAULT_DATA_ROOT / "logs")
+
+
+def _load_tmux_codex_command() -> list[str]:
+    try:
+        return list(load_config(DEFAULT_CONFIG_PATH).codex_command)
+    except Exception:
+        return list(DEFAULT_CODEX_COMMAND)
 
 
 class ProjectStore:
@@ -601,7 +609,7 @@ class ProjectStore:
 
         backend = get_backend("tmux")
         spawn_message = backend.spawn(
-            command=["codex"],
+            command=_load_tmux_codex_command(),
             agent_name=agent_name,
             agent_id=f"{agent_name}-runtime",
             agent_type="leader",

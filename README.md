@@ -149,7 +149,7 @@ Prerequisites:
 
 please update codex  `sudo npm install -g @openai/codex@latest`  <br/>
 clone this repo and cd to the root directory, <br/>
-then run codex first to check if your codex works <br/>
+!!!important:  run codex first to allow it work in this dir, use gpt-5.4 medium or hign <br/>
 
 before start, you may need link your data dir to ./data 
 ```

@@ -1,7 +1,7 @@
 session_name = "research-runtime"
-codex_command = ["codex", "--dangerously-bypass-approvals-and-sandbox"]
+codex_command = ["codex", "-m", "gpt-5.4", "--dangerously-bypass-approvals-and-sandbox"]
 agents = ["leader", "researcher", "trainer"]
-submit_keys = ["Enter","Enter", "C-m", "C-j"]
+submit_keys = ["Enter", "Enter"]
 submit_delay_ms = 500
 stall_timeout_seconds = 600
 nudge_cooldown_seconds = 300

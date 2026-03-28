@@ -37,7 +37,7 @@ Initialize or overwrite the runtime config:
 python -m research_mvp.runtime_cli init-config --force
 ```
 
-Edit `research_mvp/runtime.toml` to set the working directory, runtime root, tmux session name, Codex command, per-agent env, and idle reminder thresholds.
+Edit `research_mvp/runtime.toml` to set the working directory, runtime root, tmux session name, Codex command, per-agent env, and idle reminder thresholds. The default `codex_command` now starts Codex with `-m gpt-5.4`.
 
 Start the configured three-agent tmux runtime:
 

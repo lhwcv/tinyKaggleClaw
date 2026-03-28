@@ -69,3 +69,15 @@ local data root dir:  ./data/birdclef-2026/
 - Prioritize actionable conclusions, minimal experiment designs, and the code changes that are actually needed.
 - For every suggestion, explain why it helps, ideally stating whether it mainly targets cross-domain shift, noisy labels, class imbalance, missing classes, or inference-distribution matching.
 - Stay concise. Avoid generic surveys and prefer experience-based judgments with implementation-aware guidance.
+
+
+## Code Ref
+https://github.com/VSydorskyy/BirdCLEF_2025_2nd_place
+https://github.com/dylanliu2/BirdCLEF2025-4th-place-solution
+
+you should clone and ref them
+If baseline v1 < 0.85, you need to check issue
+
+
+## More
+see [baseline.md](baseline.md)

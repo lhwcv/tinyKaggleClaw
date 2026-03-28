@@ -35,7 +35,9 @@ DEFAULT_STALL_TIMEOUT_SECONDS = 600
 DEFAULT_NUDGE_COOLDOWN_SECONDS = 300
 DEFAULT_TRAIN_QUEUE_IDLE_REMINDER_SECONDS = 3600
 RUNTIME_DEBUG = False
-DEFAULT_CODEX_COMMAND = ["codex", "--dangerously-bypass-approvals-and-sandbox"]
+DEFAULT_CODEX_MODEL = "gpt-5.4"
+DEFAULT_CODEX_COMMAND = ["codex", "-m", DEFAULT_CODEX_MODEL, "--dangerously-bypass-approvals-and-sandbox"]
+DEFAULT_SUBMIT_KEYS = ["Enter", "Enter"]
 
 
 @dataclass
@@ -66,10 +68,10 @@ def default_config_text() -> str:
 repo_root = "{DEFAULT_REPO_ROOT}"
 workdir = "{DEFAULT_REPO_ROOT}"
 runtime_root = "{DEFAULT_REPO_ROOT / '.research-mvp-data' / 'runtime'}"
-codex_command = ["codex", "--dangerously-bypass-approvals-and-sandbox"]
+codex_command = ["codex", "-m", "{DEFAULT_CODEX_MODEL}", "--dangerously-bypass-approvals-and-sandbox"]
 agents = ["leader", "researcher", "trainer"]
-submit_keys = ["Enter", "C-m", "C-j"]
-submit_delay_ms = 250
+submit_keys = ["Enter", "Enter"]
+submit_delay_ms = 500
 stall_timeout_seconds = 600
 nudge_cooldown_seconds = 300
 train_queue_idle_reminder_seconds = 3600
@@ -101,7 +103,7 @@ def load_config(path: Path) -> RuntimeConfig:
         for agent, values in raw.get("agent_env", {}).items()
         if isinstance(values, dict)
     }
-    submit_keys = [str(key) for key in raw.get("submit_keys", ["Enter", "C-m", "C-j"])]
+    submit_keys = [str(key) for key in raw.get("submit_keys", DEFAULT_SUBMIT_KEYS)]
     submit_delay_ms = int(raw.get("submit_delay_ms", 250))
     stall_timeout_seconds = int(raw.get("stall_timeout_seconds", DEFAULT_STALL_TIMEOUT_SECONDS))
     nudge_cooldown_seconds = int(raw.get("nudge_cooldown_seconds", DEFAULT_NUDGE_COOLDOWN_SECONDS))
@@ -336,16 +338,16 @@ Runtime rules:
 """
     role_specific = {
         "leader": """Role:
-- Act as orchestrator.
+- Act as the orchestrator.
 - Read human messages from the shared thread and your inbox.
 - Check researcher and trainer progress regularly.
 - Decide who should act next and communicate through the shared thread or inbox files.
 - You are responsible for keeping the system moving without waiting for manual nudges.
-- Before planning, re-check the role boundaries in the three identity files so you delegate according to each agent's scope.
+- Before planning, re-check the role boundaries in the three identity files so you delegate according to each agent’s scope.
 - Treat the team as a machine-learning baseline team. Default iteration should move through repository-style versions such as `baseline_v10`, `baseline_v11`, `baseline_v12`...
 - If the human starts a `recipe/<name>/` task, make the first phase about recipe understanding and EDA rather than immediate model iteration.
 - When planning a new version, prefer `2-3` experiment variants under one versioned baseline package such as `baseline/experiments_v11/` rather than a single isolated run.
-- Every 5 baseline versions, such as `baseline_v5`, `baseline_v10`, or `baseline_v15`, pause for a deliberate comparison between the team's current path and reference solutions or newly researched alternatives.
+- Every 5 baseline versions, such as `baseline_v5`, `baseline_v10`, or `baseline_v15`, pause for a deliberate comparison between the team’s current path and reference solutions or newly researched alternatives.
 - Use the working-directory layout consistently: code in `src/baseline/`, experiment scripts and configs in `baseline/`, data in `data/`, outputs in `output/`.
 - Use `docs/` for experiment design notes and result summaries.
 - If training is required, first get a versioned package from researcher, typically `baseline/experiments_v11/` plus a matching formal runner like `baseline/run_experiments_v11.sh` and output target `output/baseline_v11/`.
@@ -391,7 +393,7 @@ Inbox behavior:
 - Make training implementations observable by default. `train.py` should emit intermediate logs; unless the human explicitly asks for denser logging, at least one meaningful progress log per epoch is the default minimum.
 - Ensure `src/baseline/train.py` emits a clear startup log before the training loop so the system can detect that training truly started.
 - Own the minimal dry run for new training code. That dry run should validate startup and wiring without drifting into real training.
-- After designing a version, write the design note to `docs/` using the repository's existing baseline pattern, such as `docs/baseline_v11_1_exp.md`.
+- After designing a version, write the design note to `docs/` using the repository’s existing baseline pattern, such as `docs/baseline_v11_1_exp.md`.
 - After finishing a meaningful chunk, report back to leader by default with `<runtime-cli> delegate --from researcher --to leader "..."`. Use `all` only for shared milestones.
 - Do not perform runtime control-plane operations unless the human explicitly asks.
 """,
@@ -413,7 +415,7 @@ Inbox behavior:
 - If the package is queue-ready, submit the formal run script to train_service unless the leader explicitly told you not to.
 - After results come back from train_service, write the version result summary to `docs/` using the matching result-note pattern, such as `docs/baseline_v11_1_exp_result.md`.
 - When writing the result summary, follow the general style of `docs/baseline_v11_1_exp_result.md`: lead with a one-line conclusion, then use Markdown tables for key result comparisons instead of only prose.
-- If multiple experiments, folds, or configs are involved, include a compact result table, but choose the columns based on the current task instead of hard-coding one project's schema.
+- If multiple experiments, folds, or configs are involved, include a compact result table, but choose the columns based on the current task instead of hard-coding one project’s schema.
 - Even for a single experiment, include at least one small Markdown table for key metrics or fold results.
 - After each completed `baseline_v*` version, also generate a historical trend PNG for humans that tracks the top 3 experiments of each baseline version across versions.
 - Save that figure under `docs/` with a filename like `docs/baseline_v08_to_v11_top3_trend.png`.
@@ -449,11 +451,10 @@ def send_text_to_target(
             if cfg.submit_delay_ms > 0:
                 time.sleep(cfg.submit_delay_ms / 1000)
             for key in cfg.submit_keys:
-                tmux_key = "C-m" if key.lower() in {"enter", "return", "c-m"} else key
+                tmux_key = "Enter" if key.lower() in {"enter", "return", "c-m", "c-j"} else key
                 tmux_run(["send-keys", "-t", target, tmux_key])
                 if cfg.submit_delay_ms > 0:
                     time.sleep(cfg.submit_delay_ms / 1000)
-            tmux_run(["send-keys", "-t", target, "C-m"])
     finally:
         subprocess.run(["tmux", "delete-buffer", "-b", buffer_name], capture_output=True, text=True)
         Path(tmp_path).unlink(missing_ok=True)
