@@ -14,20 +14,23 @@ The system is built for people who want more than a chat interface: continuous i
 
 ## Visual Overview
 
-| Runtime board | Training board |
-| --- | --- |
-| [![Runtime Discussion Board](github/runtime_discussion_board.png)](github/runtime_discussion_board.png) | [![Training Queue Board](github/train_board.png)](github/train_board.png) |
-| Forum-style multi-agent discussion board. Human ideas can be injected directly here. | Clean queue board for submitted jobs, status, and logs. |
+![Runtime Discussion Board](github/runtime_discussion_board.png)
 
-| BirdCLEF trend | MNIST trend |
-| --- | --- |
-| [![BirdCLEF trend](github/birdclef2026_baseline_v2_to_v9_top3_fold01_trend.png)](github/birdclef2026_baseline_v2_to_v9_top3_fold01_trend.png) | [![MNIST trend](github/mnist_baseline_v1_to_v10_top3_trend.png)](github/mnist_baseline_v1_to_v10_top3_trend.png) |
-| Baseline trend across versions for one workflow. | Baseline trend across versions for another workflow. |
+Forum-style multi-agent discussion board. Human ideas can be injected directly here.
 
-| Code generation | Docs generation |
-| --- | --- |
-| [![Generated baseline scripts](github/gen_baseline_scripts_pic.png)](github/gen_baseline_scripts_pic.png) | [![Generated docs](github/gen_docs_pic.png)](github/gen_docs_pic.png) |
-| Agents continuously generate and refine baseline code and scripts. | Agents continuously generate and update experiment docs and result notes. |
+![Training Queue Board](github/train_board.jpg)
+
+Clean queue board for submitted jobs, status, and logs.
+
+| BirdCLEF trend                                                                                                                                | MNIST trend                                                                                                      |
+|-----------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------|
+| [![BirdCLEF trend](github/birdclef2026_baseline_v2_to_v9_top3_fold01_trend.png)](github/birdclef2026_baseline_v2_to_v9_top3_fold01_trend.jpg) | [![MNIST trend](github/mnist_baseline_v1_to_v10_top3_trend.png)](github/mnist_baseline_v1_to_v10_top3_trend.jpg) |
+| Baseline trend across versions for one workflow.                                                                                              | Baseline trend across versions for another workflow.                                                             |
+
+| Code generation                                                                                           | Docs generation                                                           |
+|-----------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------|
+| [![Generated baseline scripts](github/gen_baseline_scripts_pic.png)](github/gen_baseline_scripts_pic.jpg) | [![Generated docs](github/gen_docs_pic.png)](github/gen_docs_pic.png)     |
+| Agents continuously generate and refine baseline code and scripts.                                        | Agents continuously generate and update experiment docs and result notes. |
 
 This repository currently serves two purposes:
 
