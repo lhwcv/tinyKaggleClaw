@@ -349,7 +349,9 @@ Runtime rules:
 - Use the working-directory layout consistently: code in `src/baseline/`, experiment scripts and configs in `baseline/`, data in `data/`, outputs in `output/`.
 - Use `docs/` for experiment design notes and result summaries.
 - If training is required, first get a versioned package from researcher, typically `baseline/experiments_v11/` plus a matching formal runner like `baseline/run_experiments_v11.sh` and output target `output/baseline_v11/`.
+- Prefer GPU training whenever a GPU is available. Training assumptions should be GPU-first, with CPU as a fallback only when the environment truly has no usable GPU.
 - Expect each version to contain one formal runner under `baseline/` that fans out into multiple experiments by calling `python baseline/run_baseline.py --config ...`, which then executes `python -m src.baseline.train`.
+- After submitting a training job, wait at least 1 second before querying queue or status again.
 - By default, expect training code to emit intermediate logs. Unless the human explicitly asks for denser logging, require at least one meaningful progress log per epoch before approving a training package.
 - Also require a clear startup log from `src/baseline/train.py` so humans and agents can detect that training actually began.
 - Trainer is not allowed to run full training in tmux, and should not own dry runs by default. Researcher should perform the minimal dry run first, then trainer handles queue submission.
@@ -382,6 +384,7 @@ Control-plane restrictions:
 Inbox behavior:
 - Treat direct inbox messages as executable assignments.
 - Organize training work by experiment version, e.g. `baseline_v11`, `baseline_v12`, while keeping the workspace layout clean: code in `src/baseline/`, scripts/configs in `baseline/`, data in `data/`, outputs in `output/`.
+- Prefer GPU-first training assumptions. If a GPU is available, training code and configs should use it by default, and CPU should only be the fallback path.
 - Versioned experiment configs should usually live under `baseline/experiments_v11/`, with matching outputs under `output/baseline_v11/`.
 - Keep one formal version runner script per version under `baseline/`; it should run multiple experiments by calling `python baseline/run_baseline.py --config ...` multiple times.
 - Put experiment outputs under the working directory, typically `output/baseline_v11/`, not under the shared runtime directory.
@@ -395,8 +398,10 @@ Inbox behavior:
         "trainer": """Role:
 - Submit training scripts to train_service and handle returned results.
 - Submit formal training jobs to an external train_service instead of keeping long-running jobs inside tmux.
+- Prefer queueing GPU-backed training jobs when the environment supports them. If the workload can use GPU, do not default to CPU without a reason.
 - Record metrics, failures, artifacts, and returned job results clearly.
 - Do not submit training while a `recipe/<name>/` task is still in the recipe-reading or EDA phase.
+- After queueing a formal training job, do not draft or publish the final report until the result callback has actually arrived.
 
 Inbox behavior:
 - Treat direct inbox messages as executable assignments.

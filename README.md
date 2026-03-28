@@ -14,41 +14,20 @@ The system is built for people who want more than a chat interface: continuous i
 
 ## Visual Overview
 
-<p align="center">
-  <a href="github/runtime_discussion_board.png">
-    <img src="github/runtime_discussion_board.png" alt="Runtime Discussion Board" width="49%">
-  </a>
-  <a href="github/train_board.png">
-    <img src="github/train_board.png" alt="Training Queue Board" width="49%">
-  </a>
-</p>
-<p align="center">
-  <sub><strong>Left:</strong> forum-style runtime board for watching multi-agent discussion and injecting human ideas. <strong>Right:</strong> clean training queue board for submitted jobs, status, and logs.</sub>
-</p>
+| Runtime board | Training board |
+| --- | --- |
+| [![Runtime Discussion Board](github/runtime_discussion_board.png)](github/runtime_discussion_board.png) | [![Training Queue Board](github/train_board.png)](github/train_board.png) |
+| Forum-style multi-agent discussion board. Human ideas can be injected directly here. | Clean queue board for submitted jobs, status, and logs. |
 
-<p align="center">
-  <a href="github/birdclef2026_baseline_v2_to_v9_top3_fold01_trend.png">
-    <img src="github/birdclef2026_baseline_v2_to_v9_top3_fold01_trend.png" alt="BirdCLEF top3 trend" width="49%">
-  </a>
-  <a href="github/mnist_baseline_v1_to_v10_top3_trend.png">
-    <img src="github/mnist_baseline_v1_to_v10_top3_trend.png" alt="MNIST top3 trend" width="49%">
-  </a>
-</p>
-<p align="center">
-  <sub><strong>Left:</strong> BirdCLEF baseline trend view across versions. <strong>Right:</strong> MNIST baseline trend view showing how the team keeps improving over repeated iterations.</sub>
-</p>
+| BirdCLEF trend | MNIST trend |
+| --- | --- |
+| [![BirdCLEF trend](github/birdclef2026_baseline_v2_to_v9_top3_fold01_trend.png)](github/birdclef2026_baseline_v2_to_v9_top3_fold01_trend.png) | [![MNIST trend](github/mnist_baseline_v1_to_v10_top3_trend.png)](github/mnist_baseline_v1_to_v10_top3_trend.png) |
+| Baseline trend across versions for one workflow. | Baseline trend across versions for another workflow. |
 
-<p align="center">
-  <a href="github/gen_baseline_scripts_pic.png">
-    <img src="github/gen_baseline_scripts_pic.png" alt="Generated baseline scripts" width="49%">
-  </a>
-  <a href="github/gen_docs_pic.png">
-    <img src="github/gen_docs_pic.png" alt="Generated docs" width="49%">
-  </a>
-</p>
-<p align="center">
-  <sub><strong>Left:</strong> agents continuously generate and refine baseline code and scripts. <strong>Right:</strong> agents continuously generate and update experiment docs and result notes.</sub>
-</p>
+| Code generation | Docs generation |
+| --- | --- |
+| [![Generated baseline scripts](github/gen_baseline_scripts_pic.png)](github/gen_baseline_scripts_pic.png) | [![Generated docs](github/gen_docs_pic.png)](github/gen_docs_pic.png) |
+| Agents continuously generate and refine baseline code and scripts. | Agents continuously generate and update experiment docs and result notes. |
 
 This repository currently serves two purposes:
 

@@ -106,6 +106,8 @@ Additional trainer-specific rule:
 - `trainer` should only do job submission and result triage inside the runtime.
 - Once a formal training job is submitted, treat the task as waiting on an external service.
 - When a callback arrives from the training service, inspect the result and report back to `leader`.
+- After submitting a training job, wait at least 1 second before querying status or queue state again.
+- Do not draft or publish the final training report until the result callback has actually arrived.
 - `trainer` should not run local dry runs by default; dry runs belong to `researcher`.
 - Once `researcher` has confirmed the minimal dry run passed, submission to `train_service` should normally follow immediately rather than waiting for another manual nudge.
 - When reporting the submission, include `train_task_id`, `script_path`, `technical_focus`, `script_args`, and `workdir`.
