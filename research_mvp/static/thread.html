@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Research Chat</title>
+  <style>
+    :root {
+      --bg: #f4efe7;
+      --ink: #1f1a17;
+      --muted: #71665d;
+      --line: rgba(55, 39, 25, 0.12);
+      --panel: rgba(255, 252, 247, 0.84);
+      --panel-strong: rgba(255, 255, 255, 0.92);
+      --accent: #175cd3;
+      --accent-soft: #e8f0ff;
+      --human: #1f1a17;
+      --human-soft: #f1e7d7;
+      --leader: #e8f0ff;
+      --green: #17603c;
+      --green-soft: #e7f5ea;
+      --orange: #9a4d08;
+      --orange-soft: #f8eadf;
+      --violet: #5b3bc4;
+      --violet-soft: #efe8ff;
+      --system: #efebe6;
+      --danger: #b42318;
+      --shadow: 0 24px 64px rgba(28, 21, 16, 0.12);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: Georgia, "Iowan Old Style", serif;
+      background:
+        radial-gradient(circle at top left, rgba(217, 119, 6, 0.14), transparent 24%),
+        radial-gradient(circle at bottom right, rgba(23, 92, 211, 0.1), transparent 22%),
+        linear-gradient(180deg, #faf5ee 0%, #eee2d1 100%);
+    }
+    button, input, textarea, select { font: inherit; }
+    a { color: var(--accent); text-decoration: none; }
+    .page {
+      min-height: 100vh;
+      padding: 24px;
+      display: grid;
+      grid-template-columns: minmax(0, 1.45fr) minmax(300px, 0.78fr);
+      gap: 18px;
+    }
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 28px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(16px);
+    }
+    .chat-shell {
+      min-height: calc(100vh - 48px);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .hero {
+      padding: 22px 24px 18px;
+      border-bottom: 1px solid var(--line);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.76), rgba(255,255,255,0.54)),
+        radial-gradient(circle at top, rgba(23, 92, 211, 0.08), transparent 40%);
+    }
+    .hero-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .eyebrow {
+      color: var(--muted);
+      font-size: 13px;
+      margin-bottom: 8px;
+    }
+    h1 {
+      margin: 0;
+      font-size: clamp(28px, 4vw, 48px);
+      line-height: 0.96;
+      letter-spacing: -0.04em;
+    }
+    .desc {
+      margin-top: 10px;
+      max-width: 72ch;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+    .chip-row, .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 14px;
+    }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 11px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.72);
+      color: var(--muted);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+    .chip.alert {
+      color: var(--danger);
+      border-color: rgba(180, 35, 24, 0.2);
+      background: rgba(255, 240, 238, 0.9);
+    }
+    .toolbar { margin-top: 16px; }
+    button {
+      border: none;
+      border-radius: 16px;
+      padding: 11px 15px;
+      background: var(--ink);
+      color: #fff;
+      cursor: pointer;
+    }
+    button.secondary {
+      background: rgba(255,255,255,0.62);
+      color: var(--ink);
+      border: 1px solid var(--line);
+    }
+    button.ghost {
+      background: transparent;
+      color: var(--muted);
+      border: 1px dashed var(--line);
+    }
+    .conversation {
+      flex: 1;
+      min-height: 0;
+      overflow: auto;
+      padding: 24px 24px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+    .message {
+      display: flex;
+      gap: 12px;
+      align-items: flex-end;
+      max-width: 88%;
+    }
+    .message.right {
+      margin-left: auto;
+      flex-direction: row-reverse;
+    }
+    .avatar {
+      width: 42px;
+      height: 42px;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 auto;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      background: #fff;
+      color: var(--ink);
+    }
+    .avatar.human { background: var(--human-soft); color: var(--human); }
+    .avatar.leader { background: var(--leader); color: var(--accent); }
+    .avatar.researcher { background: var(--green-soft); color: var(--green); }
+    .avatar.trainer { background: var(--orange-soft); color: var(--orange); }
+    .avatar.system { background: var(--system); color: #57534e; }
+    .bubble-wrap {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .meta {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      color: var(--muted);
+      font-size: 12px;
+      padding: 0 4px;
+    }
+    .message.right .meta {
+      justify-content: flex-end;
+    }
+    .bubble {
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      background: var(--panel-strong);
+      padding: 14px 16px;
+      white-space: pre-wrap;
+      line-height: 1.6;
+      font-size: 15px;
+      overflow-wrap: anywhere;
+    }
+    .message.right .bubble {
+      background: linear-gradient(180deg, #231d19 0%, #161210 100%);
+      color: #f9f3ea;
+      border-color: rgba(255,255,255,0.08);
+    }
+    .message.system {
+      max-width: 100%;
+      justify-content: center;
+    }
+    .message.system .bubble-wrap {
+      align-items: center;
+    }
+    .message.system .bubble {
+      border-radius: 16px;
+      font-size: 13px;
+      color: var(--muted);
+      background: rgba(255,255,255,0.6);
+      padding: 10px 12px;
+      text-align: center;
+    }
+    .message.system .meta { justify-content: center; }
+    .tag-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .tag {
+      border-radius: 999px;
+      padding: 4px 8px;
+      font-size: 11px;
+      color: var(--muted);
+      background: rgba(0,0,0,0.04);
+      border: 1px solid rgba(0,0,0,0.05);
+    }
+    .composer {
+      padding: 18px 24px 24px;
+      border-top: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(247,243,236,0.9), rgba(255,249,241,0.96));
+    }
+    .composer-card {
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      background: rgba(255,255,255,0.86);
+      padding: 14px;
+    }
+    .composer-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+    .composer-title {
+      font-size: 13px;
+      color: var(--muted);
+    }
+    textarea, input, select {
+      width: 100%;
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.92);
+      color: var(--ink);
+      padding: 12px 14px;
+    }
+    #messageContent {
+      min-height: 120px;
+      resize: vertical;
+    }
+    .composer-actions {
+      margin-top: 12px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+    }
+    .composer-hint {
+      color: var(--muted);
+      font-size: 13px;
+    }
+    details {
+      margin-top: 12px;
+      border-top: 1px dashed var(--line);
+      padding-top: 12px;
+    }
+    details summary {
+      cursor: pointer;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .advanced-grid {
+      margin-top: 12px;
+      display: grid;
+      grid-template-columns: 160px 1fr;
+      gap: 10px;
+    }
+    .sidebar {
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 15px;
+      background: rgba(255,255,255,0.7);
+    }
+    .card h3 {
+      margin: 0 0 10px;
+      font-size: 13px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .muted { color: var(--muted); }
+    .stack {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .agent, .task, .doc {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 11px 12px;
+      background: rgba(255,255,255,0.74);
+    }
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .console {
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      background: #171411;
+      color: #f5efe4;
+      padding: 12px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 12px;
+      line-height: 1.5;
+      min-height: 200px;
+      max-height: 340px;
+      overflow: auto;
+      white-space: pre-wrap;
+    }
+    .empty {
+      color: var(--muted);
+      font-size: 14px;
+      text-align: center;
+      padding: 24px 18px;
+      border: 1px dashed var(--line);
+      border-radius: 18px;
+      background: rgba(255,255,255,0.55);
+    }
+    @media (max-width: 1080px) {
+      .page { grid-template-columns: 1fr; }
+      .chat-shell { min-height: auto; }
+    }
+    @media (max-width: 720px) {
+      .page { padding: 14px; }
+      .hero, .conversation, .composer { padding-left: 16px; padding-right: 16px; }
+      .advanced-grid { grid-template-columns: 1fr; }
+      .message { max-width: 100%; }
+      .hero-top, .composer-top, .composer-actions { align-items: flex-start; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <section class="panel chat-shell">
+      <div class="hero" id="hero"></div>
+      <div class="conversation" id="timeline"></div>
+      <div class="composer">
+        <div class="composer-card">
+          <div class="composer-top">
+            <div>
+              <div class="composer-title">Chat with the TODO-room leader Codex</div>
+              <div class="muted" id="composerStatus">First message will start a leader chat automatically.</div>
+            </div>
+            <button class="secondary" id="backBtn">Back to Board</button>
+          </div>
+          <textarea id="messageContent" placeholder="Ask Codex to plan the work, challenge assumptions, or refine the TODO before agent execution starts."></textarea>
+          <div class="composer-actions">
+            <div class="composer-hint">Messages default to `human -> leader` so this page behaves like chat.</div>
+            <div class="actions">
+              <button id="sendBtn">Send</button>
+              <button class="secondary" id="startLeaderBtn" onclick="startLeaderChat()">Start Leader Chat</button>
+            </div>
+          </div>
+          <details>
+            <summary>Advanced thread controls</summary>
+            <div class="advanced-grid">
+              <select id="sender">
+                <option value="human">human</option>
+                <option value="leader">leader</option>
+                <option value="researcher">researcher</option>
+                <option value="trainer">trainer</option>
+              </select>
+              <input id="recipient" value="leader" placeholder="Recipient">
+            </div>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <aside class="panel sidebar">
+      <div class="card" id="agentCard"></div>
+      <div class="card" id="taskCard"></div>
+      <div class="card" id="docCard"></div>
+      <div class="card" id="reviewCard"></div>
+      <div class="card" id="consoleCard"></div>
+    </aside>
+  </div>
+
+  <script>
+    const projectId = window.location.pathname.split("/").filter(Boolean).pop();
+    let project = null;
+    let consoleState = { available: false, output: "", status: "loading", target: "" };
+
+    function el(id) { return document.getElementById(id); }
+
+    async function jsonFetch(url, options = {}) {
+      const response = await fetch(url, {
+        headers: { "Content-Type": "application/json" },
+        ...options,
+      });
+      if (!response.ok) {
+        const body = await response.text();
+        throw new Error(body || `HTTP ${response.status}`);
+      }
+      return response.json();
+    }
+
+    async function loadProject() {
+      const result = await jsonFetch(`/api/projects/${projectId}`);
+      project = result.project;
+      render();
+    }
+
+    function render() {
+      if (!project) return;
+      renderHero();
+      renderTimeline();
+      renderAgents();
+      renderTasks();
+      renderDocs();
+      renderReview();
+      renderConsole();
+      renderComposerState();
+    }
+
+    function renderHero() {
+      el("hero").innerHTML = `
+        <div class="hero-top">
+          <div>
+            <div class="eyebrow"><a href="/">Board</a> / Project ${escapeHtml(project.id)}</div>
+            <h1>${escapeHtml(project.title)}</h1>
+            <div class="desc">${escapeHtml(project.description || "No description yet.")}</div>
+          </div>
+          <div class="chip">${escapeHtml(project.stage)} • round ${project.current_round || 0}/${project.max_rounds}</div>
+        </div>
+        <div class="chip-row">
+          <div class="chip">Acceptance: ${escapeHtml(project.acceptance_criteria || "n/a")}</div>
+          <div class="chip">Review: ${escapeHtml(project.review_status || "pending")}</div>
+          ${project.leader_tmux_target ? `<div class="chip">tmux: ${escapeHtml(project.leader_tmux_target)}</div>` : '<div class="chip">leader chat not started</div>'}
+          ${project.attention_required ? '<div class="chip alert">Leader intervention required</div>' : ""}
+        </div>
+        <div class="toolbar">
+          ${!project.leader_tmux_target ? '<button class="secondary" onclick="startLeaderChat()">Open Codex Chat</button>' : ""}
+          ${project.leader_agent_name ? '<button class="secondary" onclick="restartLeaderChat()">Restart Codex</button>' : ""}
+          ${project.stage === "todo" ? '<button onclick="submitProject()">Submit to Agent Working</button>' : ""}
+        </div>
+      `;
+    }
+
+    function renderTimeline() {
+      const timeline = el("timeline");
+      const previousScrollTop = timeline.scrollTop;
+      const wasNearBottom = (timeline.scrollHeight - timeline.clientHeight - timeline.scrollTop) < 48;
+      const messages = [...(project.messages || [])].reverse();
+      if (!messages.length) {
+        timeline.innerHTML = '<div class="empty">No conversation yet. Send a first message and the TODO room will start a leader Codex session automatically.</div>';
+        return;
+      }
+      timeline.innerHTML = messages.map((message) => renderMessage(message)).join("");
+      if (wasNearBottom) {
+        timeline.scrollTop = timeline.scrollHeight;
+      } else {
+        timeline.scrollTop = previousScrollTop;
+      }
+    }
+
+    function renderMessage(message) {
+      const author = message.from || "system";
+      const badge = author[0] ? author[0].toUpperCase() : "?";
+      const direction = author === "human" ? "right" : "left";
+      const classes = ["message", direction];
+      if (author === "system") classes.push("system");
+      return `
+        <article class="${classes.join(" ")}">
+          <div class="avatar ${escapeAttr(author)}">${escapeHtml(badge)}</div>
+          <div class="bubble-wrap">
+            <div class="meta">
+              <strong>${escapeHtml(author)}</strong>
+              ${message.to ? `<span>to ${escapeHtml(message.to)}</span>` : ""}
+              <span>${escapeHtml(formatTime(message.timestamp))}</span>
+            </div>
+            <div class="bubble">${escapeHtml(message.content || "")}
+              <div class="tag-row">
+                <span class="tag">${escapeHtml(message.type || "message")}</span>
+                <span class="tag">project ${escapeHtml(message.key || project.id)}</span>
+              </div>
+            </div>
+          </div>
+        </article>
+      `;
+    }
+
+    function renderComposerState() {
+      el("composerStatus").textContent = project.leader_tmux_target
+        ? `Connected to ${project.leader_tmux_target}. Leader replies should appear back in this thread.`
+        : "First message will start a leader chat automatically.";
+      el("startLeaderBtn").style.display = project.leader_tmux_target ? "none" : "inline-flex";
+    }
+
+    function renderAgents() {
+      const agents = Object.values(project.agents || {});
+      el("agentCard").innerHTML = `
+        <h3>Agents</h3>
+        <div class="stack">
+          ${agents.map((agent) => `
+            <div class="agent">
+              <strong>${escapeHtml(agent.role)}</strong>
+              <div class="muted">status: ${escapeHtml(agent.status)}</div>
+              <div class="muted">event: ${escapeHtml(agent.last_event || "n/a")}</div>
+              ${agent.role !== "leader" ? `<div class="actions"><button class="secondary" onclick="heartbeat('${agent.role}')">Heartbeat</button></div>` : ""}
+            </div>
+          `).join("")}
+        </div>
+      `;
+    }
+
+    function renderTasks() {
+      const tasks = project.tasks || [];
+      el("taskCard").innerHTML = `
+        <h3>Round Tasks</h3>
+        <div class="stack">
+          ${tasks.length ? tasks.map((task) => `
+            <div class="task">
+              <strong>${escapeHtml(task.subject)}</strong>
+              <div class="muted">${escapeHtml(task.role)} • round ${task.round} • ${escapeHtml(task.status)}</div>
+              <div class="muted">${escapeHtml(task.description || "")}</div>
+              ${task.metadata && task.metadata.summary ? `<div class="muted">summary: ${escapeHtml(task.metadata.summary)}</div>` : ""}
+              <div class="actions">
+                ${task.status === "in_progress" ? `<button onclick="completeTask('${task.id}','${task.role}')">Mark complete</button>` : ""}
+              </div>
+            </div>
+          `).join("") : '<div class="empty">No tasks yet.</div>'}
+        </div>
+      `;
+    }
+
+    function renderDocs() {
+      const docs = project.docs || [];
+      el("docCard").innerHTML = `
+        <h3>Docs & Artifacts</h3>
+        <div class="stack">
+          ${docs.length ? docs.map((doc) => `
+            <div class="doc">
+              <a href="${escapeAttr(doc.url)}" target="_blank" rel="noreferrer">${escapeHtml(doc.label)}</a>
+              <div class="muted">${escapeHtml(doc.kind)} • by ${escapeHtml(doc.added_by)}</div>
+            </div>
+          `).join("") : '<div class="empty">No linked docs.</div>'}
+        </div>
+        <div class="actions">
+          <input id="docLabel" placeholder="Link label">
+          <input id="docUrl" placeholder="https://...">
+          <button class="secondary" onclick="addDoc()">Add link</button>
+        </div>
+      `;
+    }
+
+    function renderReview() {
+      el("reviewCard").innerHTML = `
+        <h3>Review State</h3>
+        <div class="muted">Review status: ${escapeHtml(project.review_status)}</div>
+        <div class="muted" style="margin-top:8px;">Leader launch: ${escapeHtml(project.leader_spawn_status || "not started")}</div>
+        ${project.leader_prompt_path ? `<div class="muted" style="margin-top:8px;">Prompt file: ${escapeHtml(project.leader_prompt_path)}</div>` : ""}
+        <div class="muted" style="margin-top:8px;">${escapeHtml(project.leader_summary || "Leader summary will appear here after the active rounds close.")}</div>
+        <div class="actions">
+          ${project.stage === "human_review" ? '<button onclick="approveReview()">Approve</button>' : ""}
+          ${project.stage === "human_review" ? '<button class="secondary" onclick="requeueProject()">Send back to TODO</button>' : ""}
+        </div>
+      `;
+    }
+
+    function renderConsole() {
+      const existingOutput = document.getElementById("consoleOutput");
+      const previousScrollTop = existingOutput ? existingOutput.scrollTop : 0;
+      const wasNearBottom = existingOutput
+        ? (existingOutput.scrollHeight - existingOutput.clientHeight - existingOutput.scrollTop) < 32
+        : true;
+
+      el("consoleCard").innerHTML = `
+        <h3>Raw tmux Console</h3>
+        <div class="muted">Target: ${escapeHtml(consoleState.target || "not available")}</div>
+        <div class="muted" style="margin-top:4px;">Status: ${escapeHtml(consoleState.status || "unknown")}</div>
+        <div class="console" id="consoleOutput">${escapeHtml(consoleState.output || "No console output yet.")}</div>
+        <div class="actions">
+          <button class="secondary" onclick="loadConsole()">Refresh Console</button>
+          <button class="ghost" onclick="sendConsoleInput()">Send raw terminal input</button>
+        </div>
+      `;
+
+      const nextOutput = document.getElementById("consoleOutput");
+      if (nextOutput) {
+        if (wasNearBottom) {
+          nextOutput.scrollTop = nextOutput.scrollHeight;
+        } else {
+          nextOutput.scrollTop = previousScrollTop;
+        }
+      }
+    }
+
+    async function sendMessage() {
+      const content = el("messageContent").value.trim();
+      if (!content) return;
+      const sender = el("sender").value || "human";
+      const recipient = el("recipient").value || "leader";
+      await jsonFetch(`/api/projects/${projectId}/messages`, {
+        method: "POST",
+        body: JSON.stringify({ sender, recipient, content }),
+      });
+      el("messageContent").value = "";
+      await loadProject();
+      await loadConsole();
+    }
+
+    async function startLeaderChat() {
+      await jsonFetch(`/api/projects/${projectId}/leader/start`, { method: "POST" });
+      await loadProject();
+      await loadConsole();
+    }
+
+    async function restartLeaderChat() {
+      await jsonFetch(`/api/projects/${projectId}/leader/restart`, { method: "POST" });
+      await loadProject();
+      await loadConsole();
+    }
+
+    async function loadConsole() {
+      const result = await jsonFetch(`/api/projects/${projectId}/leader-console`);
+      consoleState = result;
+      renderConsole();
+    }
+
+    async function sendConsoleInput() {
+      const content = window.prompt("Send raw input to the tmux pane:", "") || "";
+      if (!content.trim()) return;
+      await jsonFetch(`/api/projects/${projectId}/leader-console/send`, {
+        method: "POST",
+        body: JSON.stringify({ content }),
+      });
+      await loadConsole();
+      await loadProject();
+    }
+
+    async function addDoc() {
+      const label = el("docLabel").value.trim();
+      const url = el("docUrl").value.trim();
+      if (!label || !url) return;
+      await jsonFetch(`/api/projects/${projectId}/docs`, {
+        method: "POST",
+        body: JSON.stringify({ label, url, kind: "artifact", added_by: "human" }),
+      });
+      await loadProject();
+    }
+
+    async function submitProject() {
+      await jsonFetch(`/api/projects/${projectId}/submit`, { method: "POST" });
+      await loadProject();
+    }
+
+    async function heartbeat(role) {
+      await jsonFetch(`/api/projects/${projectId}/agents/${role}/heartbeat?event=${encodeURIComponent("heartbeat from thread ui")}`, {
+        method: "POST",
+      });
+      await loadProject();
+    }
+
+    async function completeTask(taskId, role) {
+      const summary = prompt(`Completion summary for ${role}:`, `${role} completed this step.`) || "";
+      await jsonFetch(`/api/projects/${projectId}/tasks/${taskId}/complete?role=${encodeURIComponent(role)}`, {
+        method: "POST",
+        body: JSON.stringify({ summary, artifacts: [] }),
+      });
+      await loadProject();
+    }
+
+    async function approveReview() {
+      const note = prompt("Optional approval note:", "") || "";
+      await jsonFetch(`/api/projects/${projectId}/review/approve`, {
+        method: "POST",
+        body: JSON.stringify({ note }),
+      });
+      await loadProject();
+    }
+
+    async function requeueProject() {
+      const note = prompt("Why return this to TODO?", "") || "";
+      await jsonFetch(`/api/projects/${projectId}/review/requeue`, {
+        method: "POST",
+        body: JSON.stringify({ note }),
+      });
+      await loadProject();
+    }
+
+    function escapeHtml(value) {
+      return String(value || "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;");
+    }
+
+    function escapeAttr(value) {
+      return escapeHtml(value).replaceAll("'", "&#39;");
+    }
+
+    function formatTime(value) {
+      if (!value) return "";
+      return value.replace("T", " ").slice(0, 19);
+    }
+
+    document.getElementById("sendBtn").onclick = sendMessage;
+    document.getElementById("backBtn").onclick = () => { window.location.href = "/"; };
+    document.getElementById("messageContent").addEventListener("keydown", (event) => {
+      if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+        event.preventDefault();
+        sendMessage();
+      }
+    });
+
+    const source = new EventSource("/api/events");
+    source.onmessage = (event) => {
+      const state = JSON.parse(event.data);
+      const next = (state.projects || []).find((item) => item.id === projectId);
+      if (next) {
+        project = next;
+        render();
+      }
+    };
+
+    loadProject().then(loadConsole);
+    setInterval(() => {
+      if (project?.leader_tmux_target) {
+        loadConsole();
+      }
+    }, 4000);
+  </script>
+</body>
+</html>

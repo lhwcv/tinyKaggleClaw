@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>research_mvp Technical Report</title>
+  <style>
+    :root {
+      --bg: #f4f0e8;
+      --paper: rgba(255, 251, 245, 0.94);
+      --paper-strong: #fffdf8;
+      --ink: #1e1a16;
+      --muted: #6d645b;
+      --line: rgba(47, 39, 31, 0.12);
+      --accent: #0f5bd8;
+      --accent-soft: rgba(15, 91, 216, 0.1);
+      --green: #1e6b44;
+      --green-soft: rgba(30, 107, 68, 0.1);
+      --orange: #9c4c09;
+      --orange-soft: rgba(156, 76, 9, 0.1);
+      --violet: #6b3dd1;
+      --violet-soft: rgba(107, 61, 209, 0.1);
+      --danger: #b42318;
+      --danger-soft: rgba(180, 35, 24, 0.1);
+      --shadow: 0 24px 72px rgba(36, 26, 22, 0.12);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
+      background:
+        radial-gradient(circle at top left, rgba(15, 91, 216, 0.08), transparent 22%),
+        radial-gradient(circle at top right, rgba(156, 76, 9, 0.07), transparent 24%),
+        linear-gradient(180deg, #faf6ef 0%, #efe3d3 100%);
+    }
+
+    a { color: var(--accent); text-decoration: none; }
+
+    .page {
+      max-width: 1320px;
+      margin: 0 auto;
+      padding: 28px 20px 64px;
+    }
+
+    .hero {
+      border: 1px solid var(--line);
+      border-radius: 30px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.82), rgba(255,255,255,0.68)),
+        radial-gradient(circle at top, rgba(15, 91, 216, 0.08), transparent 46%);
+      box-shadow: var(--shadow);
+      padding: 28px 30px 24px;
+    }
+
+    .eyebrow {
+      font-size: 12px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(38px, 7vw, 76px);
+      line-height: 0.92;
+      letter-spacing: -0.05em;
+    }
+
+    .lede {
+      max-width: 76ch;
+      margin-top: 16px;
+      color: var(--muted);
+      line-height: 1.65;
+      font-size: 17px;
+    }
+
+    .meta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 7px 11px;
+      background: rgba(255,255,255,0.78);
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
+      gap: 18px;
+      margin-top: 18px;
+    }
+
+    .stack {
+      display: grid;
+      gap: 18px;
+      margin-top: 18px;
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 26px;
+      background: var(--paper);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .card-inner {
+      padding: 22px 22px 24px;
+    }
+
+    h2 {
+      margin: 0 0 12px;
+      font-size: 28px;
+      line-height: 1.04;
+      letter-spacing: -0.04em;
+    }
+
+    h3 {
+      margin: 0 0 10px;
+      font-size: 20px;
+      line-height: 1.15;
+      letter-spacing: -0.03em;
+    }
+
+    p {
+      margin: 0;
+      line-height: 1.68;
+      color: var(--muted);
+    }
+
+    .prose {
+      display: grid;
+      gap: 12px;
+    }
+
+    .layers {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .mini {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 16px;
+      background: var(--paper-strong);
+    }
+
+    .mini strong {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 15px;
+    }
+
+    .mini p {
+      font-size: 14px;
+    }
+
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      margin-top: 12px;
+      background: var(--paper-strong);
+      border-radius: 18px;
+      overflow: hidden;
+    }
+
+    .table th,
+    .table td {
+      text-align: left;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+    }
+
+    .table th {
+      color: var(--ink);
+      background: rgba(0,0,0,0.03);
+      font-weight: 600;
+    }
+
+    .table tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--muted);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 6px 10px;
+      background: rgba(255,255,255,0.78);
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      display: inline-block;
+    }
+
+    .section-note {
+      margin-top: 10px;
+      padding: 12px 14px;
+      border-left: 3px solid var(--accent);
+      background: var(--accent-soft);
+      border-radius: 0 14px 14px 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    svg {
+      width: 100%;
+      height: auto;
+      display: block;
+      background: linear-gradient(180deg, rgba(255,255,255,0.72), rgba(255,255,255,0.52));
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      margin-top: 14px;
+    }
+
+    .footer {
+      margin-top: 28px;
+      padding: 18px 20px;
+      border-radius: 22px;
+      background: rgba(255,255,255,0.7);
+      border: 1px solid var(--line);
+      color: var(--muted);
+      line-height: 1.7;
+    }
+
+    .agent-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    .agent {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 16px;
+      background: var(--paper-strong);
+    }
+
+    .agent.leader { box-shadow: inset 0 0 0 1px rgba(15,91,216,0.08); }
+    .agent.researcher { box-shadow: inset 0 0 0 1px rgba(30,107,68,0.08); }
+    .agent.trainer { box-shadow: inset 0 0 0 1px rgba(156,76,9,0.08); }
+
+    ul {
+      margin: 10px 0 0;
+      padding-left: 18px;
+      color: var(--muted);
+      line-height: 1.65;
+    }
+
+    @media (max-width: 980px) {
+      .grid,
+      .layers,
+      .agent-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .page {
+        padding: 18px 14px 44px;
+      }
+
+      .hero,
+      .card-inner {
+        padding-left: 18px;
+        padding-right: 18px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <div class="eyebrow">research_mvp Technical Report</div>
+      <h1>Multi-Agent Runtime Architecture, Workflow, and State Machine</h1>
+      <p class="lede">
+        This report organizes the current <code>research_mvp</code> system into one complete technical picture: it is not a conventional HTTP chat backend, but a long-running local tmux-based multi-agent runtime with structured task state, a supervisor control loop, dual-channel shared thread / inbox communication, and a web runtime board for human observation and intervention.
+      </p>
+      <div class="meta-row">
+        <div class="chip">3 fixed roles: leader / researcher / trainer</div>
+        <div class="chip">Long-running tmux runtime</div>
+        <div class="chip">Filesystem state layer</div>
+        <div class="chip">Continuous supervisor progression</div>
+        <div class="chip">Web observation and interaction</div>
+      </div>
+    </section>
+
+    <section class="grid">
+      <article class="card">
+        <div class="card-inner">
+          <h2>1. Overall Architecture</h2>
+          <div class="prose">
+            <p>The core of <code>research_mvp</code> is not packaging a model as a stateless chat API, but keeping the runtime roles online, observable, recoverable, and collaborative over time. The system is composed of a configuration layer, a runtime control layer, a persistent state layer, and a web presentation layer.</p>
+            <p>The true system of record is the local tmux runtime. The web layer is only the visualization and interaction surface, while the source of truth lives in the <code>.research-mvp-data/runtime/</code> file tree.</p>
+          </div>
+          <div class="layers">
+            <div class="mini">
+              <strong>Configuration Layer</strong>
+              <p><code>runtime.toml</code> defines the session name, workdir, runtime root, codex command, agent list, submit keys, and timeout parameters.</p>
+            </div>
+            <div class="mini">
+              <strong>Runtime Control Layer</strong>
+              <p><code>runtime_cli.py</code> is responsible for <code>up / down / send / delegate / supervise</code>, state maintenance, stalled-task detection, and closed-loop progression.</p>
+            </div>
+            <div class="mini">
+              <strong>Persistent State Layer</strong>
+              <p>All state is written to disk in <code>thread.jsonl</code>, <code>tasks.json</code>, <code>state.json</code>, <code>agents/*.json</code>, and <code>inbox/*</code>.</p>
+            </div>
+            <div class="mini">
+              <strong>Web Presentation Layer</strong>
+              <p><code>/runtime</code> and <code>/api/runtime/*</code> expose the shared thread, tasks, and agent state, and allow the human to send messages.</p>
+            </div>
+          </div>
+          <svg viewBox="0 0 940 420" aria-label="overall architecture diagram">
+            <defs>
+              <marker id="arrowA" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto">
+                <path d="M0,0 L10,5 L0,10 z" fill="#685f56"></path>
+              </marker>
+            </defs>
+            <rect x="24" y="24" width="892" height="372" rx="22" fill="rgba(255,255,255,0.35)" stroke="rgba(47,39,31,0.08)"></rect>
+            <rect x="60" y="68" width="360" height="90" rx="16" fill="rgba(15,91,216,0.09)" stroke="rgba(15,91,216,0.18)"></rect>
+            <text x="80" y="103" font-size="24" fill="#1e1a16" font-weight="600">Configuration</text>
+            <text x="80" y="132" font-size="16" fill="#6d645b">runtime.toml</text>
+            <text x="80" y="154" font-size="16" fill="#6d645b">session / workdir / runtime_root / codex_command</text>
+
+            <rect x="520" y="68" width="360" height="90" rx="16" fill="rgba(30,107,68,0.09)" stroke="rgba(30,107,68,0.18)"></rect>
+            <text x="540" y="103" font-size="24" fill="#1e1a16" font-weight="600">Runtime Control</text>
+            <text x="540" y="132" font-size="16" fill="#6d645b">runtime_cli.py</text>
+            <text x="540" y="154" font-size="16" fill="#6d645b">up / delegate / supervise / stalled detection</text>
+
+            <rect x="60" y="240" width="360" height="110" rx="16" fill="rgba(156,76,9,0.09)" stroke="rgba(156,76,9,0.18)"></rect>
+            <text x="80" y="275" font-size="24" fill="#1e1a16" font-weight="600">Persistent State</text>
+            <text x="80" y="304" font-size="16" fill="#6d645b">thread.jsonl / tasks.json / state.json</text>
+            <text x="80" y="326" font-size="16" fill="#6d645b">agents/*.json / inbox/&lt;agent&gt;/*.json</text>
+
+            <rect x="520" y="240" width="360" height="110" rx="16" fill="rgba(107,61,209,0.09)" stroke="rgba(107,61,209,0.18)"></rect>
+            <text x="540" y="275" font-size="24" fill="#1e1a16" font-weight="600">Web Board</text>
+            <text x="540" y="304" font-size="16" fill="#6d645b">FastAPI /runtime /api/runtime/*</text>
+            <text x="540" y="326" font-size="16" fill="#6d645b">thread + tasks + agents + human intervention</text>
+
+            <line x1="420" y1="113" x2="520" y2="113" stroke="#685f56" stroke-width="2.2" marker-end="url(#arrowA)"></line>
+            <line x1="700" y1="158" x2="700" y2="240" stroke="#685f56" stroke-width="2.2" marker-end="url(#arrowA)"></line>
+            <line x1="520" y1="295" x2="420" y2="295" stroke="#685f56" stroke-width="2.2" marker-end="url(#arrowA)"></line>
+            <line x1="240" y1="240" x2="240" y2="158" stroke="#685f56" stroke-width="2.2" marker-end="url(#arrowA)"></line>
+          </svg>
+        </div>
+      </article>
+
+      <article class="card">
+        <div class="card-inner">
+          <h2>2. Key Components</h2>
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Component</th>
+                <th>Responsibility</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>tmux session</code></td>
+                <td>Hosts the fixed agent windows and keeps the CLI agents running persistently.</td>
+              </tr>
+              <tr>
+                <td><code>runtime_cli.py</code></td>
+                <td>The control hub of the system, responsible for lifecycle, messages, tasks, and the control loop.</td>
+              </tr>
+              <tr>
+                <td><code>thread.jsonl</code></td>
+                <td>The globally visible discussion stream for auditability, visibility, and cross-agent context.</td>
+              </tr>
+              <tr>
+                <td><code>tasks.json</code></td>
+                <td>The structured task-state table that underpins stalled detection and closed-loop progression.</td>
+              </tr>
+              <tr>
+                <td><code>inbox/&lt;agent&gt;</code></td>
+                <td>The actionable queue for a target agent that actually triggers execution.</td>
+              </tr>
+              <tr>
+                <td><code>/runtime</code></td>
+                <td>The runtime console for the human. It does not replace tmux, but fills the observability gap.</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="section-note">
+            Design principle: thread manages visibility, inbox manages execution, tasks manage state, supervisor manages progression, and the web board manages observation and intervention.
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <section class="card stack">
+      <div class="card-inner">
+        <h2>3. Runtime Mechanics</h2>
+        <div class="prose">
+          <p>The persistent runtime process is a tmux session named <code>research-runtime</code> by default. Each agent runs in a fixed window: <code>leader / researcher / trainer</code>. The CLI <code>up</code> command creates or repairs those windows and launches the CLI agent specified by <code>codex_command</code> inside each window.</p>
+          <p>After startup, each agent first receives a bootstrap prompt rather than entering free-form conversation immediately. That prompt injects the repo root, workdir, runtime root, thread path, inbox path, CLI command, and governance files so the agent works under a unified protocol.</p>
+        </div>
+        <div class="legend">
+          <span><i class="dot" style="background:#0f5bd8"></i> leader</span>
+          <span><i class="dot" style="background:#1e6b44"></i> researcher</span>
+          <span><i class="dot" style="background:#9c4c09"></i> trainer</span>
+        </div>
+        <svg viewBox="0 0 1180 300" aria-label="tmux runtime layout">
+          <defs>
+            <marker id="arrowB" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto">
+              <path d="M0,0 L10,5 L0,10 z" fill="#685f56"></path>
+            </marker>
+          </defs>
+          <rect x="24" y="24" width="1132" height="252" rx="22" fill="rgba(255,255,255,0.35)" stroke="rgba(47,39,31,0.08)"></rect>
+          <rect x="54" y="54" width="1072" height="52" rx="14" fill="rgba(0,0,0,0.04)" stroke="rgba(47,39,31,0.1)"></rect>
+          <text x="78" y="86" font-size="24" fill="#1e1a16" font-weight="600">tmux session: research-runtime</text>
+
+          <rect x="70" y="144" width="230" height="90" rx="16" fill="rgba(15,91,216,0.09)" stroke="rgba(15,91,216,0.18)"></rect>
+          <text x="92" y="181" font-size="22" fill="#1e1a16" font-weight="600">leader</text>
+          <text x="92" y="208" font-size="15" fill="#6d645b">orchestrator / closure owner</text>
+
+          <rect x="334" y="144" width="230" height="90" rx="16" fill="rgba(30,107,68,0.09)" stroke="rgba(30,107,68,0.18)"></rect>
+          <text x="356" y="181" font-size="22" fill="#1e1a16" font-weight="600">researcher</text>
+          <text x="356" y="208" font-size="15" fill="#6d645b">analysis / matrix / research assets</text>
+
+          <rect x="598" y="144" width="230" height="90" rx="16" fill="rgba(156,76,9,0.09)" stroke="rgba(156,76,9,0.18)"></rect>
+          <text x="620" y="181" font-size="22" fill="#1e1a16" font-weight="600">trainer</text>
+          <text x="620" y="208" font-size="15" fill="#6d645b">execution / logs / metrics / artifacts</text>
+
+          <rect x="862" y="144" width="230" height="90" rx="16" fill="rgba(107,61,209,0.09)" stroke="rgba(107,61,209,0.18)"></rect>
+          <text x="884" y="208" font-size="15" fill="#6d645b">review / risks / final gate</text>
+
+          <line x1="300" y1="189" x2="334" y2="189" stroke="#685f56" stroke-width="2" marker-end="url(#arrowB)"></line>
+          <line x1="564" y1="189" x2="598" y2="189" stroke="#685f56" stroke-width="2" marker-end="url(#arrowB)"></line>
+          <line x1="828" y1="189" x2="862" y2="189" stroke="#685f56" stroke-width="2" marker-end="url(#arrowB)"></line>
+        </svg>
+      </div>
+    </section>
+
+    <section class="card stack">
+      <div class="card-inner">
+        <h2>4. End-to-End Workflow</h2>
+        <p>The diagram below shows the main path of the current system from the human request, through queueing, delivery, execution, reporting, state synchronization, stalled detection, and final closed-loop completion.</p>
+        <svg viewBox="0 0 1320 760" aria-label="complete workflow diagram">
+          <defs>
+            <marker id="arrowC" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto">
+              <path d="M0,0 L10,5 L0,10 z" fill="#685f56"></path>
+            </marker>
+          </defs>
+
+          <rect x="30" y="30" width="1260" height="700" rx="28" fill="rgba(255,255,255,0.34)" stroke="rgba(47,39,31,0.08)"></rect>
+
+          <rect x="68" y="78" width="220" height="88" rx="16" fill="rgba(0,0,0,0.04)" stroke="rgba(47,39,31,0.1)"></rect>
+          <text x="92" y="114" font-size="22" fill="#1e1a16" font-weight="600">1. Human Request</text>
+          <text x="92" y="140" font-size="15" fill="#6d645b">CLI or /runtime board</text>
+
+          <rect x="356" y="78" width="250" height="88" rx="16" fill="rgba(15,91,216,0.09)" stroke="rgba(15,91,216,0.18)"></rect>
+          <text x="380" y="114" font-size="22" fill="#1e1a16" font-weight="600">2. queue_message()</text>
+          <text x="380" y="140" font-size="15" fill="#6d645b">write inbox + write thread + maybe create task</text>
+
+          <rect x="676" y="56" width="250" height="64" rx="14" fill="rgba(156,76,9,0.09)" stroke="rgba(156,76,9,0.18)"></rect>
+          <text x="700" y="94" font-size="20" fill="#1e1a16" font-weight="600">thread.jsonl</text>
+          <text x="700" y="113" font-size="14" fill="#6d645b">shared visible log</text>
+
+          <rect x="676" y="138" width="250" height="64" rx="14" fill="rgba(30,107,68,0.09)" stroke="rgba(30,107,68,0.18)"></rect>
+          <text x="700" y="176" font-size="20" fill="#1e1a16" font-weight="600">inbox/&lt;agent&gt;</text>
+          <text x="700" y="195" font-size="14" fill="#6d645b">actionable queue</text>
+
+          <rect x="676" y="220" width="250" height="64" rx="14" fill="rgba(107,61,209,0.09)" stroke="rgba(107,61,209,0.18)"></rect>
+          <text x="700" y="258" font-size="20" fill="#1e1a16" font-weight="600">tasks.json</text>
+          <text x="700" y="277" font-size="14" fill="#6d645b">owner / status / due / stall_count</text>
+
+          <rect x="994" y="78" width="238" height="88" rx="16" fill="rgba(0,0,0,0.04)" stroke="rgba(47,39,31,0.1)"></rect>
+          <text x="1018" y="114" font-size="22" fill="#1e1a16" font-weight="600">3. supervise</text>
+          <text x="1018" y="140" font-size="15" fill="#6d645b">deliver inbox to tmux panes</text>
+
+          <rect x="994" y="240" width="238" height="88" rx="16" fill="rgba(15,91,216,0.09)" stroke="rgba(15,91,216,0.18)"></rect>
+          <text x="1018" y="276" font-size="22" fill="#1e1a16" font-weight="600">4. tmux Agent</text>
+          <text x="1018" y="302" font-size="15" fill="#6d645b">leader / researcher / trainer</text>
+
+          <rect x="884" y="404" width="348" height="96" rx="16" fill="rgba(30,107,68,0.09)" stroke="rgba(30,107,68,0.18)"></rect>
+          <text x="910" y="440" font-size="22" fill="#1e1a16" font-weight="600">5. Agent Reports Back</text>
+          <text x="910" y="466" font-size="15" fill="#6d645b">thread update with task_id / progress / blocker / completion</text>
+
+          <rect x="526" y="404" width="290" height="96" rx="16" fill="rgba(107,61,209,0.09)" stroke="rgba(107,61,209,0.18)"></rect>
+          <text x="550" y="440" font-size="22" fill="#1e1a16" font-weight="600">6. sync_task_progress()</text>
+          <text x="550" y="466" font-size="15" fill="#6d645b">task_id first, heuristics as fallback</text>
+
+          <rect x="182" y="404" width="270" height="96" rx="16" fill="rgba(180,35,24,0.09)" stroke="rgba(180,35,24,0.18)"></rect>
+          <text x="206" y="440" font-size="22" fill="#1e1a16" font-weight="600">7. detect_stalled_tasks()</text>
+          <text x="206" y="466" font-size="15" fill="#6d645b">nudge owner / escalate to leader</text>
+
+          <rect x="80" y="574" width="372" height="104" rx="16" fill="rgba(255,255,255,0.75)" stroke="rgba(47,39,31,0.1)"></rect>
+          <text x="104" y="612" font-size="22" fill="#1e1a16" font-weight="600">8. advance_workflow()</text>
+          <text x="104" y="638" font-size="15" fill="#6d645b">trainer result ready → leader final synthesis</text>
+
+          <rect x="528" y="574" width="320" height="104" rx="16" fill="rgba(15,91,216,0.09)" stroke="rgba(15,91,216,0.18)"></rect>
+          <text x="552" y="612" font-size="22" fill="#1e1a16" font-weight="600">9. Updated Runtime State</text>
+          <text x="552" y="638" font-size="15" fill="#6d645b">tasks / workflow_state / agents / thread</text>
+          <text x="552" y="660" font-size="15" fill="#6d645b">next loop continues automatically</text>
+
+          <rect x="910" y="574" width="322" height="104" rx="16" fill="rgba(0,0,0,0.04)" stroke="rgba(47,39,31,0.1)"></rect>
+          <text x="934" y="612" font-size="22" fill="#1e1a16" font-weight="600">10. Human Observes /runtime</text>
+          <text x="934" y="638" font-size="15" fill="#6d645b">thread + tasks + agents + intervene if needed</text>
+
+          <line x1="288" y1="122" x2="356" y2="122" stroke="#685f56" stroke-width="2.2" marker-end="url(#arrowC)"></line>
+          <line x1="606" y1="122" x2="676" y2="88" stroke="#685f56" stroke-width="2.2" marker-end="url(#arrowC)"></line>
+          <line x1="606" y1="122" x2="676" y2="170" stroke="#685f56" stroke-width="2.2" marker-end="url(#arrowC)"></line>
+          <line x1="606" y1="122" x2="676" y2="252" stroke="#685f56" stroke-width="2.2" marker-end="url(#arrowC)"></line>
+          <line x1="926" y1="170" x2="994" y2="122" stroke="#685f56" stroke-width="2.2" marker-end="url(#arrowC)"></line>
+          <line x1="1113" y1="166" x2="1113" y2="240" stroke="#685f56" stroke-width="2.2" marker-end="url(#arrowC)"></line>
+          <line x1="1113" y1="328" x2="1113" y2="404" stroke="#685f56" stroke-width="2.2" marker-end="url(#arrowC)"></line>
+          <line x1="884" y1="452" x2="816" y2="452" stroke="#685f56" stroke-width="2.2" marker-end="url(#arrowC)"></line>
+          <line x1="526" y1="452" x2="452" y2="452" stroke="#685f56" stroke-width="2.2" marker-end="url(#arrowC)"></line>
+          <line x1="318" y1="500" x2="318" y2="574" stroke="#685f56" stroke-width="2.2" marker-end="url(#arrowC)"></line>
+          <line x1="452" y1="626" x2="528" y2="626" stroke="#685f56" stroke-width="2.2" marker-end="url(#arrowC)"></line>
+          <line x1="848" y1="626" x2="910" y2="626" stroke="#685f56" stroke-width="2.2" marker-end="url(#arrowC)"></line>
+          <path d="M 1110 500 C 1230 500, 1244 544, 1244 620" fill="none" stroke="#685f56" stroke-width="2.2" marker-end="url(#arrowC)"></path>
+        </svg>
+        <div class="section-note">
+          Key point: the system no longer depends on the leader simply remembering to keep moving. True continuity comes from the control loop formed by <code>tasks.json</code>, <code>supervise</code>, and stalled detection.
+        </div>
+      </div>
+    </section>
+
+    <section class="grid">
+      <article class="card">
+        <div class="card-inner">
+          <h2>5. Task State Machine</h2>
+          <p>The current runtime is not a full BPMN engine, but it already has the most important minimal state machine. Explicit <code>task_id</code> updates take priority, with heuristic text inference only as a fallback.</p>
+          <svg viewBox="0 0 980 520" aria-label="task state machine diagram">
+            <defs>
+              <marker id="arrowD" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto">
+                <path d="M0,0 L10,5 L0,10 z" fill="#685f56"></path>
+              </marker>
+            </defs>
+
+            <rect x="54" y="176" width="150" height="86" rx="18" fill="rgba(15,91,216,0.1)" stroke="rgba(15,91,216,0.2)"></rect>
+            <text x="84" y="214" font-size="24" fill="#1e1a16" font-weight="600">assigned</text>
+            <text x="84" y="238" font-size="14" fill="#6d645b">new task created</text>
+
+            <rect x="286" y="176" width="168" height="86" rx="18" fill="rgba(30,107,68,0.1)" stroke="rgba(30,107,68,0.2)"></rect>
+            <text x="314" y="214" font-size="24" fill="#1e1a16" font-weight="600">in_progress</text>
+            <text x="314" y="238" font-size="14" fill="#6d645b">owner reports progress</text>
+
+            <rect x="548" y="74" width="150" height="86" rx="18" fill="rgba(180,35,24,0.1)" stroke="rgba(180,35,24,0.2)"></rect>
+            <text x="586" y="112" font-size="24" fill="#1e1a16" font-weight="600">blocked</text>
+            <text x="586" y="136" font-size="14" fill="#6d645b">needs input / unblock</text>
+
+            <rect x="548" y="278" width="150" height="86" rx="18" fill="rgba(156,76,9,0.1)" stroke="rgba(156,76,9,0.2)"></rect>
+            <text x="586" y="316" font-size="24" fill="#1e1a16" font-weight="600">stalled</text>
+            <text x="586" y="340" font-size="14" fill="#6d645b">timeout + nudge</text>
+
+            <rect x="784" y="176" width="150" height="86" rx="18" fill="rgba(107,61,209,0.1)" stroke="rgba(107,61,209,0.2)"></rect>
+            <text x="816" y="214" font-size="24" fill="#1e1a16" font-weight="600">completed</text>
+            <text x="816" y="238" font-size="14" fill="#6d645b">owner reports done</text>
+
+            <line x1="204" y1="219" x2="286" y2="219" stroke="#685f56" stroke-width="2.4" marker-end="url(#arrowD)"></line>
+            <text x="214" y="204" font-size="13" fill="#6d645b">owner update</text>
+
+            <line x1="454" y1="196" x2="548" y2="146" stroke="#685f56" stroke-width="2.4" marker-end="url(#arrowD)"></line>
+            <text x="454" y="152" font-size="13" fill="#6d645b">blocker signal</text>
+
+            <line x1="454" y1="242" x2="548" y2="298" stroke="#685f56" stroke-width="2.4" marker-end="url(#arrowD)"></line>
+            <text x="454" y="292" font-size="13" fill="#6d645b">timeout / no progress</text>
+
+            <line x1="698" y1="117" x2="784" y2="196" stroke="#685f56" stroke-width="2.4" marker-end="url(#arrowD)"></line>
+            <text x="704" y="145" font-size="13" fill="#6d645b">resolved + done</text>
+
+            <line x1="698" y1="321" x2="784" y2="242" stroke="#685f56" stroke-width="2.4" marker-end="url(#arrowD)"></line>
+            <text x="708" y="300" font-size="13" fill="#6d645b">nudge then progress</text>
+
+            <line x1="454" y1="219" x2="784" y2="219" stroke="#685f56" stroke-width="2.4" marker-end="url(#arrowD)"></line>
+            <text x="574" y="204" font-size="13" fill="#6d645b">completion signal</text>
+
+            <path d="M 622 278 C 622 226, 622 226, 622 160" fill="none" stroke="#685f56" stroke-width="2.1" marker-end="url(#arrowD)"></path>
+            <text x="634" y="222" font-size="13" fill="#6d645b">still blocked</text>
+          </svg>
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Status</th>
+                <th>Meaning</th>
+                <th>Typical Trigger</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>assigned</code></td>
+                <td>The task has been created and assigned to an owner.</td>
+                <td>Human requests, leader delegation, or system workflow tasks.</td>
+              </tr>
+              <tr>
+                <td><code>in_progress</code></td>
+                <td>The owner has started making progress.</td>
+                <td>A progress update carrying the same <code>task_id</code>.</td>
+              </tr>
+              <tr>
+                <td><code>blocked</code></td>
+                <td>The owner explicitly reports that input, approval, or an external condition is needed.</td>
+                <td>blocker signal</td>
+              </tr>
+              <tr>
+                <td><code>stalled</code></td>
+                <td>The runtime determines that the task is stalled after a long period without progress.</td>
+                <td>Timeout exceeded and outside the nudge cooldown.</td>
+              </tr>
+              <tr>
+                <td><code>completed</code></td>
+                <td>The owner has explicitly completed the task.</td>
+                <td>completion signal with same <code>task_id</code></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </article>
+
+      <article class="card">
+        <div class="card-inner">
+          <h2>6. Stalled Detection Logic</h2>
+          <p>This is what turns the system from something that can merely converse into something that can keep moving. The runtime actively decides when a task is no longer in a normal wait state but has actually stalled and needs nudging or escalation.</p>
+          <svg viewBox="0 0 520 520" aria-label="stalled detection decision diagram">
+            <defs>
+              <marker id="arrowE" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto">
+                <path d="M0,0 L10,5 L0,10 z" fill="#685f56"></path>
+              </marker>
+            </defs>
+            <rect x="170" y="24" width="180" height="66" rx="16" fill="rgba(15,91,216,0.1)" stroke="rgba(15,91,216,0.18)"></rect>
+            <text x="205" y="64" font-size="22" fill="#1e1a16" font-weight="600">active task?</text>
+
+            <rect x="156" y="128" width="208" height="66" rx="16" fill="rgba(255,255,255,0.7)" stroke="rgba(47,39,31,0.12)"></rect>
+            <text x="184" y="168" font-size="20" fill="#1e1a16">not completed?</text>
+
+            <rect x="130" y="232" width="260" height="66" rx="16" fill="rgba(255,255,255,0.7)" stroke="rgba(47,39,31,0.12)"></rect>
+            <text x="156" y="271" font-size="20" fill="#1e1a16">timeout exceeded?</text>
+
+            <rect x="108" y="336" width="304" height="66" rx="16" fill="rgba(255,255,255,0.7)" stroke="rgba(47,39,31,0.12)"></rect>
+            <text x="134" y="375" font-size="20" fill="#1e1a16">outside nudge cooldown?</text>
+
+            <rect x="122" y="442" width="276" height="56" rx="16" fill="rgba(180,35,24,0.1)" stroke="rgba(180,35,24,0.18)"></rect>
+            <text x="148" y="477" font-size="19" fill="#1e1a16" font-weight="600">mark stalled + nudge owner + escalate leader</text>
+
+            <line x1="260" y1="90" x2="260" y2="128" stroke="#685f56" stroke-width="2.2" marker-end="url(#arrowE)"></line>
+            <line x1="260" y1="194" x2="260" y2="232" stroke="#685f56" stroke-width="2.2" marker-end="url(#arrowE)"></line>
+            <line x1="260" y1="298" x2="260" y2="336" stroke="#685f56" stroke-width="2.2" marker-end="url(#arrowE)"></line>
+            <line x1="260" y1="402" x2="260" y2="442" stroke="#685f56" stroke-width="2.2" marker-end="url(#arrowE)"></line>
+          </svg>
+          <div class="section-note">
+            The result of this logic is that the system no longer relies on the leader to remember to keep pushing. The runtime itself detects stalls and drives recovery.
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <section class="card">
+      <div class="card-inner">
+        <h2>7. The Three Agent Roles</h2>
+        <p>These are not homogeneous workers. The system is intentionally role-asymmetric: <code>leader</code> owns flow and closure, <code>researcher</code> owns knowledge assets, and <code>trainer</code> owns execution assets.</p>
+        <div class="agent-grid">
+          <div class="agent leader">
+            <h3>leader</h3>
+            <ul>
+              <li>Orchestrator and convergence owner</li>
+              <li>Reads the human request, breaks it down, delegates work, follows up, and requests reviews</li>
+              <li>Not an infrastructure operator by default; should not touch up / attach / supervise</li>
+              <li>Owns closure: the task is not finished until the final report is produced and completion is explicitly declared</li>
+            </ul>
+          </div>
+          <div class="agent researcher">
+            <h3>researcher</h3>
+            <ul>
+              <li>Focused on knowledge and analysis outputs</li>
+              <li>Responsible for plans, matrices, research notes, implementation guidance, and analytical assets</li>
+              <li>Outputs are usually integrable research assets rather than the final deliverable</li>
+            </ul>
+          </div>
+          <div class="agent trainer">
+            <h3>trainer</h3>
+            <ul>
+              <li>Focused on execution and evidence-chain outputs</li>
+              <li>Responsible for script execution, training runs, experiment records, logs, and metrics</li>
+              <li>Emphasizes reproducibility and verifiable evidence</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="grid">
+      <article class="card">
+        <div class="card-inner">
+          <h2>8. Communication Contract</h2>
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Protocol Point</th>
+                <th>Current Rule</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>shared thread</td>
+                <td>Handles visibility, auditability, and cross-agent context, but does not directly wake a worker.</td>
+              </tr>
+              <tr>
+                <td>targeted inbox</td>
+                <td>This is what actually triggers execution. To make an agent act, you must send a targeted inbox message.</td>
+              </tr>
+              <tr>
+                <td>Default reporting target</td>
+                <td>Workers report to <code>leader</code> by default, not to <code>all</code>.</td>
+              </tr>
+              <tr>
+                <td>When to use <code>all</code></td>
+                <td>Reserve it for shared milestones, major risks, and globally visible updates.</td>
+              </tr>
+              <tr>
+                <td><code>task_id</code></td>
+                <td>If a message carries a <code>task_id</code>, subsequent progress / blocker / completion updates must carry the same id.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </article>
+
+      <article class="card">
+        <div class="card-inner">
+          <h2>9. Web Board Positioning</h2>
+          <p><code>/runtime</code> is not a business-facing front end. It is a runtime console that reads runtime file state directly instead of going through the old project abstraction.</p>
+          <ul>
+            <li>Message stream: shows recent shared-thread messages with sender, recipient, timestamp, and task_id</li>
+            <li>Agent cards: show online status, target, pending inbox count, last event, and latest message</li>
+            <li>Task view: shows the task list for the current human request, including owner, status, due, and stall_count</li>
+          </ul>
+          <div class="section-note">
+            The web board does not replace tmux. Its purpose is to align the human's view across thread, task, and agent state, and enable precise intervention when needed.
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <section class="card">
+      <div class="card-inner">
+        <h2>10. Strengths, Limitations, and Next Steps</h2>
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Dimension</th>
+              <th>Content</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Current strengths</td>
+              <td>Fully local, friendly to tmux and CLI agents, auditable state, a minimal task state machine, stalled recovery, and a shared state layer used by both web and CLI.</td>
+            </tr>
+            <tr>
+              <td>Current limitations</td>
+              <td>Some task-state transitions still rely on compatibility heuristics, leader orchestration is still prompt-driven, workflow automation is still rule-light, there is no formal heartbeat / lease protocol yet, and there is no artifact dependency graph yet.</td>
+            </tr>
+            <tr>
+              <td>Recommended evolution</td>
+              <td>Write <code>task_id / parent_task_id / status intent</code> explicitly, add pane-output or heartbeat-level health checks, upgrade <code>advance_workflow()</code> into a phase/state graph, add <code>task_id</code> filtering to <code>/runtime</code>, and complete <code>runtime doctor / repair</code>.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="footer">
+      Conclusion: <code>research_mvp</code> is no longer just “a few agents chatting.” It is evolving toward a local multi-agent runtime that can keep moving, recover, and remain auditable. Its real core is not the prompt alone, but the combination of <code>long-running tmux processes + a filesystem state layer + a supervisor control loop + a task_id-driven state machine</code>.
+    </section>
+  </main>
+</body>
+</html>

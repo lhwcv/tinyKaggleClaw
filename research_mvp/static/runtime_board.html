@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Runtime Board</title>
+  <style>
+    :root {
+      --bg: #f5f1ea;
+      --panel: #fffdf9;
+      --line: #ddd4c7;
+      --ink: #241f1a;
+      --muted: #6c6258;
+      --human: #201a17;
+      --human-soft: #f3e4d2;
+      --leader: #d9e7ff;
+      --researcher: #e1f3e6;
+      --trainer: #fde8d6;
+      --system: #ece8e2;
+      --accent: #1f5bd8;
+      --danger: #b42318;
+      --shadow: 0 18px 44px rgba(33, 24, 17, 0.08);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top left, rgba(31, 91, 216, 0.08), transparent 24%),
+        radial-gradient(circle at bottom right, rgba(181, 106, 41, 0.08), transparent 24%),
+        var(--bg);
+    }
+    button, textarea, select { font: inherit; }
+    .page {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: minmax(0, 1.4fr) 360px;
+      gap: 18px;
+      padding: 20px;
+    }
+    .panel {
+      background: rgba(255, 253, 249, 0.92);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+    .main {
+      min-height: calc(100vh - 40px);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .hero {
+      padding: 20px 22px 16px;
+      border-bottom: 1px solid var(--line);
+    }
+    .eyebrow {
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    h1 {
+      margin: 0;
+      font-size: clamp(28px, 4vw, 44px);
+      line-height: 0.96;
+      letter-spacing: -0.04em;
+    }
+    .sub {
+      margin-top: 10px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    .meta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 14px;
+    }
+    .chip {
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .thread {
+      flex: 1;
+      min-height: 0;
+      overflow: auto;
+      padding: 18px 18px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .message {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+    .message.human {
+      flex-direction: row-reverse;
+    }
+    .avatar {
+      width: 42px;
+      height: 42px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--line);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      flex: 0 0 auto;
+      background: #fff;
+    }
+    .avatar.human { background: var(--human-soft); color: var(--human); }
+    .avatar.leader { background: var(--leader); color: #1347af; }
+    .avatar.researcher { background: var(--researcher); color: #17603c; }
+    .avatar.trainer { background: var(--trainer); color: #9a4d08; }
+    .avatar.system { background: var(--system); color: #57534e; }
+    .body { min-width: 0; max-width: min(900px, 100%); }
+    .meta {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin: 0 4px 6px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .message.human .meta {
+      justify-content: flex-end;
+    }
+    .bubble {
+      padding: 14px 16px;
+      border-radius: 20px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      line-height: 1.6;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+    .message.human .bubble {
+      background: linear-gradient(180deg, #201b18 0%, #171311 100%);
+      color: #fbf6ee;
+      border-color: rgba(255,255,255,0.06);
+    }
+    .task-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin: 0 4px 8px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.88);
+      color: var(--muted);
+      font-size: 11px;
+      letter-spacing: 0.04em;
+    }
+    .message.human .task-chip {
+      background: rgba(255,255,255,0.12);
+      border-color: rgba(255,255,255,0.16);
+      color: rgba(255,255,255,0.8);
+      justify-content: flex-end;
+    }
+    .compose {
+      padding: 16px 18px 18px;
+      border-top: 1px solid var(--line);
+      display: grid;
+      gap: 12px;
+      background: rgba(255, 250, 244, 0.88);
+    }
+    .compose-row {
+      display: grid;
+      grid-template-columns: 150px 1fr auto;
+      gap: 10px;
+      align-items: start;
+    }
+    textarea, select {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: #fff;
+      color: var(--ink);
+      padding: 12px 14px;
+    }
+    textarea {
+      min-height: 108px;
+      resize: vertical;
+      line-height: 1.5;
+    }
+    button {
+      border: 0;
+      border-radius: 16px;
+      padding: 12px 16px;
+      background: var(--ink);
+      color: #fff;
+      cursor: pointer;
+    }
+    button.secondary {
+      background: #fff;
+      color: var(--ink);
+      border: 1px solid var(--line);
+    }
+    .side {
+      min-height: calc(100vh - 40px);
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(255,255,255,0.82);
+      padding: 14px;
+    }
+    .card h2, .card h3 {
+      margin: 0 0 8px;
+      font-size: 18px;
+    }
+    .agent-card {
+      display: grid;
+      gap: 8px;
+    }
+    .agent-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+    }
+    .role-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border-radius: 999px;
+      padding: 5px 10px;
+      border: 1px solid var(--line);
+      font-size: 12px;
+      background: #fff;
+    }
+    .status {
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .status.online { color: #17603c; }
+    .status.offline { color: var(--danger); }
+    .small {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.45;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+    .error {
+      color: var(--danger);
+      font-size: 13px;
+    }
+    @media (max-width: 980px) {
+      .page { grid-template-columns: 1fr; }
+      .side { min-height: auto; }
+      .compose-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <section class="panel main">
+      <div class="hero">
+        <div class="eyebrow">Research Runtime</div>
+        <h1>Discussion Board</h1>
+        <div class="sub">A simple single-page discussion board. The shared thread is shown here in real time, the right side shows each agent role and inbox state, and you can send a message directly to any specific agent.</div>
+        <div class="meta-row" id="metaRow"></div>
+      </div>
+      <div class="thread" id="thread"></div>
+      <form class="compose" id="composeForm">
+        <div class="compose-row">
+          <select id="recipient" aria-label="Recipient"></select>
+          <textarea id="content" placeholder="Send a message to leader or another agent. The message will be appended to the shared thread and queued in the target agent inbox."></textarea>
+          <button type="submit">Send</button>
+        </div>
+        <div style="display:flex; gap:10px; align-items:center; justify-content:space-between; flex-wrap:wrap;">
+          <div class="small">Messages are sent as <strong>human</strong> by default. If `supervise` is running, they will be delivered automatically to the corresponding tmux pane.</div>
+          <div style="display:flex; gap:8px;">
+            <button type="button" class="secondary" id="refreshBtn">Refresh</button>
+            <button type="button" class="secondary" id="scrollBtn">Bottom</button>
+          </div>
+        </div>
+        <div class="error" id="error"></div>
+      </form>
+    </section>
+
+    <aside class="panel side">
+      <div class="card">
+        <h2>Agents</h2>
+        <div class="small">Default convention: workers report to leader, and `all` is reserved for shared milestones.</div>
+      </div>
+      <div id="agents"></div>
+      <div class="card">
+        <h3>Workflow</h3>
+        <div class="small" id="workflowState">No workflow state yet.</div>
+      </div>
+      <div class="card">
+        <h3>Tasks</h3>
+        <div class="small" id="taskSummary">No tasks yet.</div>
+      </div>
+      <div id="tasks"></div>
+    </aside>
+  </div>
+
+  <script>
+    const state = {
+      board: null,
+      pollHandle: null,
+      userPinnedBottom: true,
+    };
+
+    const roleColorClass = (name) => {
+      if (["human", "leader", "researcher", "trainer", "system"].includes(name)) return name;
+      return "system";
+    };
+
+    const escapeHtml = (value) => String(value || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/\"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+
+    function formatTime(value) {
+      if (!value) return "";
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return value;
+      return date.toLocaleString();
+    }
+
+    function short(text, limit = 140) {
+      const value = String(text || "").trim();
+      if (value.length <= limit) return value || "No messages yet";
+      return value.slice(0, limit - 1) + "…";
+    }
+
+    function renderMeta(board) {
+      const el = document.getElementById("metaRow");
+      el.innerHTML = `
+        <div class="chip">session ${escapeHtml(board.session_name)}</div>
+        <div class="chip">workdir ${escapeHtml(board.workdir)}</div>
+        <div class="chip">thread ${escapeHtml(board.thread_path)}</div>
+      `;
+    }
+
+    function renderMessages(board) {
+      const container = document.getElementById("thread");
+      const atBottom = container.scrollTop + container.clientHeight >= container.scrollHeight - 60;
+      container.innerHTML = board.messages.map((msg) => {
+        const sender = msg.from || "system";
+        const recipient = msg.to || "";
+        const taskId = msg.task_id || "";
+        const content = msg.content || msg.message || "";
+        const cls = sender === "human" ? "message human" : "message";
+        const avatarCls = roleColorClass(sender);
+        const label = sender === "human" ? "HU" : sender.slice(0, 2).toUpperCase();
+        return `
+          <article class="${cls}">
+            <div class="avatar ${avatarCls}">${escapeHtml(label)}</div>
+            <div class="body">
+              <div class="meta">
+                <strong>${escapeHtml(sender)}</strong>
+                <span>→ ${escapeHtml(recipient)}</span>
+                <span>${escapeHtml(formatTime(msg.timestamp))}</span>
+              </div>
+              ${taskId ? `<div class="task-chip">task ${escapeHtml(taskId)}</div>` : ""}
+              <div class="bubble">${escapeHtml(content)}</div>
+            </div>
+          </article>
+        `;
+      }).join("");
+      if (state.userPinnedBottom || atBottom) {
+        container.scrollTop = container.scrollHeight;
+      }
+    }
+
+    function renderAgents(board) {
+      const container = document.getElementById("agents");
+      container.innerHTML = board.agents.map((agent) => `
+        <section class="card agent-card">
+          <div class="agent-top">
+            <div class="role-pill">${escapeHtml(agent.name)}</div>
+            <div class="status ${escapeHtml(agent.status)}">${escapeHtml(agent.status)}</div>
+          </div>
+          <div class="small">target: ${escapeHtml(agent.target || "-")}</div>
+          <div class="small">pending inbox: ${escapeHtml(agent.pending_inbox)}</div>
+          <div class="small">last event: ${escapeHtml(agent.last_event || "-")}</div>
+          <div class="small">latest task: ${escapeHtml((agent.last_message && agent.last_message.task_id) || "-")}</div>
+          <div class="small">latest message: ${escapeHtml(short(agent.last_message && agent.last_message.content))}</div>
+          <div style="display:flex; gap:8px;">
+            <button type="button" class="secondary" data-recipient="${escapeHtml(agent.name)}">Message ${escapeHtml(agent.name)}</button>
+          </div>
+        </section>
+      `).join("");
+
+      container.querySelectorAll("button[data-recipient]").forEach((button) => {
+        button.addEventListener("click", () => {
+          document.getElementById("recipient").value = button.dataset.recipient;
+          document.getElementById("content").focus();
+        });
+      });
+    }
+
+    function renderWorkflow(board) {
+      document.getElementById("workflowState").textContent =
+        JSON.stringify(board.workflow_state || {}, null, 2) || "No workflow state yet.";
+    }
+
+    function renderTasks(board) {
+      const summary = board.task_summary || {};
+      const counts = summary.counts || {};
+      const countText = Object.keys(counts).length
+        ? Object.entries(counts).map(([key, value]) => `${key}: ${value}`).join(" | ")
+        : "No active task counts.";
+      document.getElementById("taskSummary").textContent =
+        `${countText}\ncurrent marker: ${summary.current_task_marker || "-"}`;
+
+      const container = document.getElementById("tasks");
+      const tasks = summary.tasks || [];
+      container.innerHTML = tasks.map((task) => `
+        <section class="card agent-card">
+          <div class="agent-top">
+            <div class="role-pill">${escapeHtml(task.owner || "-")}</div>
+            <div class="status ${escapeHtml(task.status || "unknown")}">${escapeHtml(task.status || "unknown")}</div>
+          </div>
+          <div class="small">id: ${escapeHtml(task.id || "-")}</div>
+          <div class="small">title: ${escapeHtml(task.title || "-")}</div>
+          <div class="small">created by: ${escapeHtml(task.created_by || "-")}</div>
+          <div class="small">assigned: ${escapeHtml(formatTime(task.assigned_at))}</div>
+          <div class="small">last progress: ${escapeHtml(formatTime(task.last_progress_at) || "-")}</div>
+          <div class="small">due: ${escapeHtml(formatTime(task.due_at) || "-")}</div>
+          <div class="small">stalls: ${escapeHtml(task.stall_count || 0)}</div>
+        </section>
+      `).join("") || `<div class="card"><div class="small">No task records for the current human request.</div></div>`;
+    }
+
+    function syncRecipientOptions(board) {
+      const select = document.getElementById("recipient");
+      const current = select.value;
+      const options = board.agents.map((agent) => (
+        `<option value="${escapeHtml(agent.name)}">${escapeHtml(agent.name)}</option>`
+      ));
+      select.innerHTML = options.join("");
+      if (board.agents.some((agent) => agent.name === current)) {
+        select.value = current;
+      } else if (board.agents.some((agent) => agent.name === "leader")) {
+        select.value = "leader";
+      }
+    }
+
+    async function jsonFetch(url, options) {
+      const response = await fetch(url, options);
+      if (!response.ok) {
+        let detail = response.statusText;
+        try {
+          const payload = await response.json();
+          detail = payload.detail || detail;
+        } catch (_) {}
+        throw new Error(detail);
+      }
+      return response.json();
+    }
+
+    async function loadBoard() {
+      const board = await jsonFetch("/api/runtime/board?limit=160");
+      state.board = board;
+      renderMeta(board);
+      syncRecipientOptions(board);
+      renderMessages(board);
+      renderAgents(board);
+      renderWorkflow(board);
+      renderTasks(board);
+      document.getElementById("error").textContent = "";
+    }
+
+    async function sendMessage(event) {
+      event.preventDefault();
+      const recipient = document.getElementById("recipient").value;
+      const content = document.getElementById("content").value.trim();
+      if (!content) {
+        document.getElementById("error").textContent = "Message cannot be empty.";
+        return;
+      }
+      try {
+        const payload = await jsonFetch("/api/runtime/messages", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sender: "human", recipient, content }),
+        });
+        document.getElementById("content").value = "";
+        state.board = payload.board;
+        renderMeta(payload.board);
+        syncRecipientOptions(payload.board);
+        renderMessages(payload.board);
+        renderAgents(payload.board);
+        renderWorkflow(payload.board);
+        renderTasks(payload.board);
+      } catch (error) {
+        document.getElementById("error").textContent = error.message || String(error);
+      }
+    }
+
+    function startPolling() {
+      if (state.pollHandle) clearInterval(state.pollHandle);
+      state.pollHandle = setInterval(() => {
+        loadBoard().catch((error) => {
+          document.getElementById("error").textContent = error.message || String(error);
+        });
+      }, 2000);
+    }
+
+    document.getElementById("composeForm").addEventListener("submit", sendMessage);
+    document.getElementById("refreshBtn").addEventListener("click", () => loadBoard());
+    document.getElementById("scrollBtn").addEventListener("click", () => {
+      const container = document.getElementById("thread");
+      container.scrollTop = container.scrollHeight;
+      state.userPinnedBottom = true;
+    });
+    document.getElementById("thread").addEventListener("scroll", (event) => {
+      const el = event.currentTarget;
+      state.userPinnedBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 60;
+    });
+
+    loadBoard().catch((error) => {
+      document.getElementById("error").textContent = error.message || String(error);
+    });
+    startPolling();
+  </script>
+</body>
+</html>

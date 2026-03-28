@@ -1,0 +1,1 @@
+rm -r .research-mvp-data  src output eda logs docs baseline

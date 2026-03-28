@@ -1,0 +1,17 @@
+session_name = "research-runtime"
+codex_command = ["codex", "--dangerously-bypass-approvals-and-sandbox"]
+agents = ["leader", "researcher", "trainer"]
+submit_keys = ["Enter","Enter", "C-m", "C-j"]
+submit_delay_ms = 500
+stall_timeout_seconds = 600
+nudge_cooldown_seconds = 300
+train_queue_idle_reminder_seconds = 3600
+
+[env]
+PYTHONUNBUFFERED = "1"
+
+[agent_env.leader]
+
+[agent_env.researcher]
+
+[agent_env.trainer]

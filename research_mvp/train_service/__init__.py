@@ -1,0 +1,1 @@
+"""Minimal train service package."""

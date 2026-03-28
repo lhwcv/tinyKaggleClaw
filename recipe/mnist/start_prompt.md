@@ -1,0 +1,1 @@
+探索优化 CNN for  mnist， test_acc 目标 99.8%， 参数小于 1m 

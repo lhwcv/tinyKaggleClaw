@@ -1,0 +1,510 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Train Service Board</title>
+  <style>
+    :root {
+      --bg: #f4f7fb;
+      --card: #ffffff;
+      --card-2: #f8fbff;
+      --text: #152238;
+      --muted: #5e6c85;
+      --line: #dbe4f0;
+      --brand: #1a56c5;
+      --brand-2: #0b8f74;
+      --warn: #d97706;
+      --danger: #dc2626;
+      --shadow: 0 12px 34px rgba(15, 23, 42, 0.08);
+      --radius: 18px;
+      --maxw: 1520px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      color: var(--text);
+      background: var(--bg);
+      line-height: 1.68;
+    }
+    .cover {
+      background: linear-gradient(135deg, #1a4f9c 0%, #177aa2 55%, #18a57d 100%);
+      color: white;
+      padding: 64px 24px 52px;
+    }
+    .cover-inner {
+      max-width: var(--maxw);
+      margin: 0 auto;
+    }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.16);
+      font-size: 12px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    h1 {
+      margin: 16px 0 10px;
+      font-size: clamp(34px, 4vw, 54px);
+      line-height: 1.05;
+      letter-spacing: -0.03em;
+    }
+    .subtitle {
+      max-width: 920px;
+      margin: 0;
+      font-size: 18px;
+      opacity: .96;
+    }
+    .subtitle strong {
+      font-weight: 800;
+      color: #ffffff;
+    }
+    .subtitle .id-mark {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.18);
+      border: 1px solid rgba(255,255,255,0.22);
+      font-size: 0.9em;
+      margin: 0 2px;
+      white-space: nowrap;
+    }
+    .cover-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 22px;
+    }
+    .badge {
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.16);
+      font-size: 13px;
+    }
+    .container {
+      max-width: var(--maxw);
+      margin: 0 auto;
+      padding: 26px 24px 56px;
+    }
+    .section {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 24px;
+      margin-bottom: 22px;
+    }
+    .section h2 {
+      margin: 0 0 14px;
+      font-size: 28px;
+      letter-spacing: -0.02em;
+    }
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+    }
+    .metric {
+      background: linear-gradient(180deg, #f8fbff, #fff);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 18px;
+    }
+    .metric .k {
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .metric .v {
+      font-size: 34px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      margin-top: 4px;
+    }
+    .metric .d {
+      color: var(--muted);
+      font-size: 14px;
+      margin-top: 6px;
+    }
+    .callout {
+      border-left: 4px solid var(--brand-2);
+      background: #edfdf8;
+      color: #113a33;
+      border-radius: 0 14px 14px 0;
+      padding: 14px 16px;
+      margin-top: 16px;
+    }
+    .muted { color: var(--muted); }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      overflow: hidden;
+      background: white;
+      min-width: 1440px;
+    }
+    th, td {
+      padding: 12px;
+      text-align: left;
+      vertical-align: top;
+      border-bottom: 1px solid var(--line);
+      font-size: 14px;
+    }
+    thead th {
+      background: #f3f7ff;
+      font-weight: 700;
+    }
+    tr:last-child td { border-bottom: none; }
+    code {
+      background: #f1f5f9;
+      border: 1px solid var(--line);
+      padding: 1px 6px;
+      border-radius: 8px;
+      font-size: 13px;
+      word-break: break-word;
+    }
+    .id-chip {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 9px;
+      border-radius: 999px;
+      background: #eef4ff;
+      border: 1px solid #cfe0fb;
+      color: var(--brand);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      white-space: nowrap;
+    }
+    .runtime-chip {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 9px;
+      border-radius: 999px;
+      background: #edfdf8;
+      border: 1px solid #c9f1e4;
+      color: var(--brand-2);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      white-space: nowrap;
+    }
+    .status {
+      display: inline-flex;
+      align-items: center;
+      padding: 5px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: #f8fbff;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .status.queued { color: var(--warn); }
+    .status.running { color: var(--brand); }
+    .status.succeeded { color: var(--brand-2); }
+    .status.failed, .status.cancelled { color: var(--danger); }
+    .empty {
+      color: var(--muted);
+      text-align: center;
+      padding: 18px 0 4px;
+    }
+    .actions-cell {
+      white-space: nowrap;
+    }
+    .btn {
+      appearance: none;
+      border: 1px solid #cfe0fb;
+      background: #eef4ff;
+      color: var(--brand);
+      border-radius: 999px;
+      padding: 7px 12px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .btn:hover {
+      background: #e3eeff;
+    }
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: default;
+    }
+    .log-panel[hidden] {
+      display: none;
+    }
+    .log-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+    .log-actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .log-meta {
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .log-box {
+      margin: 0;
+      background: #0f172a;
+      color: #dbeafe;
+      border-radius: 16px;
+      padding: 18px;
+      min-height: 240px;
+      max-height: 560px;
+      overflow: auto;
+      font: 12px/1.6 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    @media (max-width: 1100px) {
+      .metrics { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 700px) {
+      .metrics { grid-template-columns: 1fr; }
+      table { display: block; overflow-x: auto; white-space: nowrap; }
+    }
+  </style>
+</head>
+<body>
+  <header class="cover">
+    <div class="cover-inner">
+      <div class="eyebrow">Train Queue · Shell Scripts</div>
+      <h1>Train Service Board</h1>
+      <p class="subtitle">
+        This is a display-only page. Training jobs are submitted through the API, the service executes shell scripts in queue order, and returns a
+        <span class="id-mark">train_task_id</span>. When the job finishes, the service sends the same
+        <span class="id-mark">train_task_id</span> back to <strong>research_mvp</strong> together with the original job information.
+      </p>
+      <div class="cover-badges" id="heroBadges"></div>
+    </div>
+  </header>
+
+  <div class="container">
+    <main>
+      <section class="section">
+        <h2>Queue Overview</h2>
+        <div class="metrics" id="metrics"></div>
+        <div class="callout">
+          Jobs are executed one by one in FIFO order. Under normal conditions only one job should be
+          <strong>running</strong>, while the rest remain <strong>queued</strong> and waiting.
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>Training Jobs</h2>
+        <p class="muted">The table shows each <code>train_task_id</code> with its script path, technical focus, status, timestamps, and log path.</p>
+        <div id="tableWrap"></div>
+      </section>
+
+      <section class="section log-panel" id="logPanel" hidden>
+        <div class="log-head">
+          <div>
+            <h2 id="logTitle">Current Log</h2>
+            <div class="log-meta" id="logMeta">Select a training job to view the latest log output here.</div>
+          </div>
+          <div class="log-actions">
+            <button class="btn" id="refreshLogBtn" type="button">Refresh Log</button>
+            <button class="btn" id="closeLogBtn" type="button">Close</button>
+          </div>
+        </div>
+        <pre class="log-box" id="logBox">No log loaded yet.</pre>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const state = { pollHandle: null, selectedLogJobId: "", selectedLogLines: 120 };
+
+    function escapeHtml(value) {
+      return String(value || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    function formatTime(value) {
+      if (!value) return "-";
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return value;
+      return date.toLocaleString();
+    }
+
+    function short(value, limit = 90) {
+      const text = String(value || "");
+      return text.length <= limit ? text : text.slice(0, limit - 1) + "…";
+    }
+
+    async function jsonFetch(url) {
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(response.statusText);
+      }
+      return response.json();
+    }
+
+    async function loadJobLogs(jobId, { lines = state.selectedLogLines, focus = false } = {}) {
+      state.selectedLogJobId = jobId;
+      const panel = document.getElementById("logPanel");
+      const box = document.getElementById("logBox");
+      const meta = document.getElementById("logMeta");
+      const title = document.getElementById("logTitle");
+      title.textContent = `Current Log · ${jobId}`;
+      meta.textContent = "Loading recent log output...";
+      box.textContent = "Loading...";
+      panel.hidden = false;
+      if (focus) {
+        panel.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+
+      try {
+        const payload = await jsonFetch(`/jobs/${encodeURIComponent(jobId)}/logs?lines=${encodeURIComponent(lines)}`);
+        const jobStatus = payload.status || "-";
+        const logPath = payload.log_path || "-";
+        const exists = payload.exists;
+        const linesText = (payload.lines || []).join("\n");
+        meta.textContent = `status: ${jobStatus} | log: ${logPath} | returned lines: ${payload.line_count || 0}`;
+        box.textContent = exists
+          ? (linesText || "(The log file exists, but it does not contain any output yet)")
+          : "(The log file does not exist yet; the job may not have started producing output)";
+      } catch (error) {
+        meta.textContent = "Failed to load log";
+        box.textContent = `Failed to load logs for ${jobId}: ${error.message}`;
+      }
+    }
+
+    function closeLogPanel() {
+      state.selectedLogJobId = "";
+      document.getElementById("logPanel").hidden = true;
+    }
+
+    function renderHero(board) {
+      const counts = board.counts || {};
+      document.getElementById("heroBadges").innerHTML = `
+        <span class="badge">Queued ${escapeHtml(counts.queued || 0)}</span>
+        <span class="badge">Running ${escapeHtml(counts.running || 0)}</span>
+        <span class="badge">Succeeded ${escapeHtml(counts.succeeded || 0)}</span>
+        <span class="badge">Failed ${escapeHtml(counts.failed || 0)}</span>
+      `;
+    }
+
+    function renderMetrics(board) {
+      const counts = board.counts || {};
+      const queue = board.queue || {};
+      document.getElementById("metrics").innerHTML = `
+        <div class="metric">
+          <div class="k">Queued</div>
+          <div class="v">${escapeHtml(queue.queued_count || 0)}</div>
+          <div class="d">${escapeHtml((queue.queued_ids || []).join(", ") || "No queued jobs")}</div>
+        </div>
+        <div class="metric">
+          <div class="k">Running</div>
+          <div class="v">${escapeHtml(queue.running_count || 0)}</div>
+          <div class="d">${escapeHtml((queue.running_ids || []).join(", ") || "No running jobs")}</div>
+        </div>
+        <div class="metric">
+          <div class="k">Succeeded</div>
+          <div class="v">${escapeHtml(counts.succeeded || 0)}</div>
+          <div class="d">Finished and callback-ready jobs.</div>
+        </div>
+        <div class="metric">
+          <div class="k">Failed</div>
+          <div class="v">${escapeHtml(counts.failed || 0)}</div>
+          <div class="d">Jobs that exited with a non-zero status or runtime error.</div>
+        </div>
+      `;
+    }
+
+    function renderTable(board) {
+      const jobs = board.jobs || [];
+      const wrap = document.getElementById("tableWrap");
+      if (!jobs.length) {
+        wrap.innerHTML = `<div class="empty">There are no training jobs right now.</div>`;
+        return;
+      }
+      wrap.innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th>Train Task ID</th>
+              <th>Status</th>
+              <th>Script Path</th>
+              <th>Technical Focus</th>
+              <th>Runtime Task</th>
+              <th>Created</th>
+              <th>Started</th>
+              <th>Finished</th>
+              <th>Script Args</th>
+              <th>Log Path</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${jobs.map((job) => `
+              <tr>
+                <td><span class="id-chip">${escapeHtml(job.id || "-")}</span></td>
+                <td><span class="status ${escapeHtml(job.status || "unknown")}">${escapeHtml(job.status || "unknown")}</span></td>
+                <td><code title="${escapeHtml(job.script_path || "-")}">${escapeHtml(short(job.script_path || "-"))}</code></td>
+                <td title="${escapeHtml((job.technical_focus || []).join(", "))}">${escapeHtml(short((job.technical_focus || []).join(", ") || "-"))}</td>
+                <td>${job.runtime_task_id ? `<span class="runtime-chip">${escapeHtml(job.runtime_task_id)}</span>` : `<span class="muted">-</span>`}</td>
+                <td>${escapeHtml(formatTime(job.created_at))}</td>
+                <td>${escapeHtml(formatTime(job.started_at))}</td>
+                <td>${escapeHtml(formatTime(job.finished_at))}</td>
+                <td title="${escapeHtml((job.script_args || []).join(" "))}">${escapeHtml(short((job.script_args || []).join(" ") || "-"))}</td>
+                <td><code title="${escapeHtml(job.log_path || "-")}">${escapeHtml(short(job.log_path || "-"))}</code></td>
+                <td class="actions-cell"><button class="btn log-trigger" type="button" data-job-id="${escapeHtml(job.id || "")}">View Log</button></td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      `;
+      wrap.querySelectorAll(".log-trigger").forEach((button) => {
+        button.addEventListener("click", () => {
+          const jobId = button.getAttribute("data-job-id");
+          if (!jobId) return;
+          loadJobLogs(jobId, { focus: true }).catch(() => {});
+        });
+      });
+    }
+
+    async function loadBoard() {
+      const board = await jsonFetch("/api/board");
+      renderHero(board);
+      renderMetrics(board);
+      renderTable(board);
+    }
+
+    function startPolling() {
+      if (state.pollHandle) clearInterval(state.pollHandle);
+      state.pollHandle = setInterval(() => {
+        loadBoard().catch(() => {});
+      }, 2000);
+    }
+
+    document.getElementById("refreshLogBtn").addEventListener("click", () => {
+      if (!state.selectedLogJobId) return;
+      loadJobLogs(state.selectedLogJobId, { focus: false }).catch(() => {});
+    });
+
+    document.getElementById("closeLogBtn").addEventListener("click", () => {
+      closeLogPanel();
+    });
+
+    loadBoard();
+    startPolling();
+  </script>
+</body>
+</html>

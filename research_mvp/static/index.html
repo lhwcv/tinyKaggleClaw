@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Autonomous ML Research Board</title>
+  <style>
+    :root {
+      --bg: #f3efe6;
+      --ink: #1f1b17;
+      --muted: #73685c;
+      --panel: rgba(255,255,255,0.9);
+      --border: rgba(61, 46, 33, 0.12);
+      --accent: #1447e6;
+      --warm: #d97706;
+      --green: #15803d;
+      --red: #b91c1c;
+      --todo: #efe2cc;
+      --working: #dce9ff;
+      --review: #dff3e5;
+      --shadow: 0 18px 60px rgba(39, 31, 23, 0.12);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Georgia, "Iowan Old Style", "Palatino Linotype", serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top left, rgba(217, 119, 6, 0.12), transparent 28%),
+        radial-gradient(circle at top right, rgba(20, 71, 230, 0.12), transparent 22%),
+        linear-gradient(180deg, #f8f3ea 0%, #efe6d8 100%);
+      min-height: 100vh;
+    }
+    header {
+      padding: 28px 32px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      gap: 16px;
+    }
+    h1 {
+      margin: 0;
+      font-size: clamp(34px, 5vw, 56px);
+      line-height: 0.95;
+      letter-spacing: -0.04em;
+    }
+    .subtitle {
+      max-width: 720px;
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.5;
+    }
+    .status-chip {
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: rgba(255,255,255,0.72);
+      padding: 8px 12px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    main {
+      display: grid;
+      grid-template-columns: 1.3fr 1fr;
+      gap: 18px;
+      padding: 12px 32px 32px;
+    }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(20px);
+    }
+    .panel-inner {
+      padding: 18px;
+    }
+    .composer {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 12px;
+    }
+    input, textarea, select, button {
+      font: inherit;
+    }
+    input, textarea, select {
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.8);
+    }
+    textarea { min-height: 92px; resize: vertical; }
+    button {
+      border: none;
+      border-radius: 14px;
+      padding: 11px 14px;
+      cursor: pointer;
+      background: var(--ink);
+      color: white;
+    }
+    button.secondary {
+      background: rgba(0,0,0,0.06);
+      color: var(--ink);
+      border: 1px solid var(--border);
+    }
+    .board {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-top: 12px;
+    }
+    .lane {
+      border-radius: 22px;
+      border: 1px solid var(--border);
+      overflow: hidden;
+      min-height: 440px;
+      background: rgba(255,255,255,0.54);
+    }
+    .lane.todo { background: linear-gradient(180deg, var(--todo), rgba(255,255,255,0.4)); }
+    .lane.working { background: linear-gradient(180deg, var(--working), rgba(255,255,255,0.45)); }
+    .lane.review { background: linear-gradient(180deg, var(--review), rgba(255,255,255,0.45)); }
+    .lane-header {
+      padding: 16px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+    }
+    .lane-header h2 {
+      margin: 0;
+      font-size: 15px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+    }
+    .lane-body {
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .card {
+      border: 1px solid rgba(0,0,0,0.08);
+      border-radius: 18px;
+      background: rgba(255,255,255,0.88);
+      padding: 14px;
+      cursor: pointer;
+      transition: transform 0.16s ease, box-shadow 0.16s ease;
+    }
+    .card:hover, .card.selected {
+      transform: translateY(-2px);
+      box-shadow: 0 14px 30px rgba(42, 34, 23, 0.12);
+    }
+    .card small, .muted { color: var(--muted); }
+    .card-title {
+      font-size: 18px;
+      margin: 4px 0 8px;
+      line-height: 1.2;
+    }
+    .flag {
+      display: inline-block;
+      margin-top: 8px;
+      padding: 4px 8px;
+      font-size: 11px;
+      border-radius: 999px;
+      background: rgba(217, 119, 6, 0.12);
+      color: var(--warm);
+    }
+    .detail-grid {
+      display: grid;
+      gap: 14px;
+    }
+    .detail-section {
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 14px;
+      background: rgba(255,255,255,0.7);
+    }
+    .detail-section h3 {
+      margin: 0 0 10px;
+      font-size: 13px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .agents {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+    .agent {
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 10px;
+      background: rgba(255,255,255,0.72);
+    }
+    .agent strong { display: block; font-size: 15px; margin-bottom: 4px; }
+    .tasks, .messages, .docs { display: flex; flex-direction: column; gap: 10px; }
+    .task {
+      border-left: 4px solid var(--accent);
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.88);
+      border: 1px solid var(--border);
+    }
+    .task .meta { font-size: 12px; color: var(--muted); margin-top: 4px; }
+    .task-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+    .message {
+      border-bottom: 1px solid rgba(0,0,0,0.06);
+      padding-bottom: 10px;
+    }
+    .message:last-child { border-bottom: none; padding-bottom: 0; }
+    .message .meta {
+      font-size: 12px;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .message p {
+      margin: 6px 0 0;
+      line-height: 1.45;
+      font-size: 14px;
+    }
+    .docs a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+    .row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+    }
+    .split {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+    .empty {
+      color: var(--muted);
+      font-size: 14px;
+      padding: 18px 6px;
+    }
+    @media (max-width: 1100px) {
+      main, .composer, .split, .agents { grid-template-columns: 1fr; }
+      .board { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Autonomous ML Research Board</h1>
+      <div class="subtitle">
+        Leader supervises researcher and trainer through a three-lane board:
+        TODO, Agent Working, and Human Review. Messages, docs, and round-by-round task state update live.
+      </div>
+    </div>
+    <div class="status-chip" id="connectionStatus">Connecting...</div>
+  </header>
+
+  <main style="display:block; padding-top: 0;">
+    <section class="panel" style="margin: 0 32px 32px;">
+      <div class="panel-inner">
+        <div class="composer">
+          <div>
+            <div class="split">
+              <input id="title" placeholder="Overall research task title">
+              <input id="acceptance" placeholder="Acceptance criteria">
+            </div>
+            <textarea id="description" placeholder="Describe the ML objective, constraints, datasets, or compute budget"></textarea>
+          </div>
+          <div>
+            <input id="maxRounds" type="number" min="1" max="6" value="2" placeholder="Max rounds">
+            <textarea id="docLinks" placeholder="Optional doc links, one per line. Format: label | https://..."></textarea>
+            <div class="row">
+              <button id="createProject">Create TODO item</button>
+              <button class="secondary" id="refreshBtn">Refresh</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="board">
+          <div class="lane todo">
+            <div class="lane-header"><h2>TODO</h2><span id="todoCount">0</span></div>
+            <div class="lane-body" id="laneTodo"></div>
+          </div>
+          <div class="lane working">
+            <div class="lane-header"><h2>Agent Working</h2><span id="workingCount">0</span></div>
+            <div class="lane-body" id="laneWorking"></div>
+          </div>
+          <div class="lane review">
+            <div class="lane-header"><h2>Human Review</h2><span id="reviewCount">0</span></div>
+            <div class="lane-body" id="laneReview"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    let state = { projects: [] };
+    function el(id) { return document.getElementById(id); }
+
+    async function jsonFetch(url, options = {}) {
+      const response = await fetch(url, {
+        headers: { "Content-Type": "application/json" },
+        ...options,
+      });
+      if (!response.ok) {
+        const body = await response.text();
+        throw new Error(body || `HTTP ${response.status}`);
+      }
+      return response.json();
+    }
+
+    async function loadState() {
+      state = await jsonFetch("/api/state");
+      if (!selectedProjectId && state.projects.length) {
+        selectedProjectId = state.projects[0].id;
+      }
+      render();
+    }
+
+    function groupedProjects() {
+      return {
+        todo: state.projects.filter((p) => p.stage === "todo"),
+        working: state.projects.filter((p) => p.stage === "agent_working"),
+        review: state.projects.filter((p) => p.stage === "human_review"),
+      };
+    }
+
+    function renderProjectCard(project) {
+      const div = document.createElement("div");
+      div.className = "card";
+      div.onclick = () => { window.location.href = `/projects/${project.id}`; };
+      const latestTask = project.tasks.find((task) => task.status === "in_progress") || project.tasks[0];
+      div.innerHTML = `
+        <small>#${project.id} • round ${project.current_round || 0}</small>
+        <div class="card-title">${escapeHtml(project.title)}</div>
+        <small>${escapeHtml(project.acceptance_criteria || "No acceptance criteria yet")}</small>
+        <div class="muted" style="margin-top:8px;">${escapeHtml(latestTask ? latestTask.subject : project.description || "Waiting for next action")}</div>
+        <div class="muted" style="margin-top:8px;">Latest thread: ${escapeHtml((project.messages && project.messages[0] && project.messages[0].content) || "No messages yet")}</div>
+        ${project.attention_required ? '<div class="flag">Leader intervention required</div>' : ''}
+      `;
+      return div;
+    }
+
+    function renderLane(containerId, projects) {
+      const container = el(containerId);
+      container.innerHTML = "";
+      if (!projects.length) {
+        container.innerHTML = '<div class="empty">Nothing here yet.</div>';
+        return;
+      }
+      projects.forEach((project) => container.appendChild(renderProjectCard(project)));
+    }
+
+    function render() {
+      const grouped = groupedProjects();
+      el("todoCount").textContent = grouped.todo.length;
+      el("workingCount").textContent = grouped.working.length;
+      el("reviewCount").textContent = grouped.review.length;
+      renderLane("laneTodo", grouped.todo);
+      renderLane("laneWorking", grouped.working);
+      renderLane("laneReview", grouped.review);
+    }
+
+    async function createProject() {
+      const title = el("title").value.trim();
+      if (!title) {
+        alert("Title is required.");
+        return;
+      }
+      const payload = {
+        title,
+        description: el("description").value.trim(),
+        acceptance_criteria: el("acceptance").value.trim(),
+        max_rounds: Number(el("maxRounds").value || "2"),
+      };
+      const result = await jsonFetch("/api/projects", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+      await attachDocLinks(result.project.id);
+      el("title").value = "";
+      el("description").value = "";
+      el("acceptance").value = "";
+      el("docLinks").value = "";
+      await loadState();
+    }
+
+    async function attachDocLinks(projectId) {
+      const lines = el("docLinks").value.split("\n").map((line) => line.trim()).filter(Boolean);
+      for (const line of lines) {
+        const [label, url] = line.includes("|") ? line.split("|").map((part) => part.trim()) : [line, line];
+        if (!url) continue;
+        await jsonFetch(`/api/projects/${projectId}/docs`, {
+          method: "POST",
+          body: JSON.stringify({ label, url, kind: "doc", added_by: "human" }),
+        });
+      }
+    }
+
+    async function submitProject(projectId) {
+      await jsonFetch(`/api/projects/${projectId}/submit`, { method: "POST" });
+      await loadState();
+    }
+
+    function escapeHtml(value) {
+      return String(value || "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;");
+    }
+
+    el("createProject").onclick = createProject;
+    el("refreshBtn").onclick = loadState;
+
+    const source = new EventSource("/api/events");
+    source.onopen = () => { el("connectionStatus").textContent = "Live updates connected"; };
+    source.onerror = () => { el("connectionStatus").textContent = "Live updates reconnecting"; };
+    source.onmessage = (event) => {
+      state = JSON.parse(event.data);
+      render();
+    };
+
+    loadState();
+  </script>
+</body>
+</html>
