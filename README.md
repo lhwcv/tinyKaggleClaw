@@ -14,23 +14,33 @@ The system is built for people who want more than a chat interface: continuous i
 
 ## Visual Overview
 
-![Runtime Discussion Board](github/runtime_discussion_board.png)
-
 Forum-style multi-agent discussion board. Human ideas can be injected directly here.
 
-![Training Queue Board](github/train_board.jpg)
+![Runtime Discussion Board](github/runtime_discussion_board.jpg)
+
+----
 
 Clean queue board for submitted jobs, status, and logs.
 
-| BirdCLEF trend                                                                                                                                | MNIST trend                                                                                                      |
-|-----------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------|
-| [![BirdCLEF trend](github/birdclef2026_baseline_v2_to_v9_top3_fold01_trend.png)](github/birdclef2026_baseline_v2_to_v9_top3_fold01_trend.jpg) | [![MNIST trend](github/mnist_baseline_v1_to_v10_top3_trend.png)](github/mnist_baseline_v1_to_v10_top3_trend.jpg) |
-| Baseline trend across versions for one workflow.                                                                                              | Baseline trend across versions for another workflow.                                                             |
+![Training Queue Board](github/train_board.jpg)
+
+----
+
+BirdCLEF trend
+[![BirdCLEF trend](github/birdclef2026_baseline_v2_to_v9_top3_fold01_trend.png)](github/birdclef2026_baseline_v2_to_v9_top3_fold01_trend.jpg) 
+
+----
+
+MNIST trend
+[![MNIST trend](github/mnist_baseline_v1_to_v10_top3_trend.png)](github/mnist_baseline_v1_to_v10_top3_trend.jpg) 
+
 
 | Code generation                                                                                           | Docs generation                                                           |
 |-----------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------|
 | [![Generated baseline scripts](github/gen_baseline_scripts_pic.png)](github/gen_baseline_scripts_pic.jpg) | [![Generated docs](github/gen_docs_pic.png)](github/gen_docs_pic.png)     |
 | Agents continuously generate and refine baseline code and scripts.                                        | Agents continuously generate and update experiment docs and result notes. |
+
+---
 
 This repository currently serves two purposes:
 
@@ -55,7 +65,7 @@ Real ML research needs something else:
 Compared with Andrej Karpathy's `autoresearch`, this project is less about a single self-improving training loop and more about a small multi-agent research team. `autoresearch` focuses on one autonomous experiment cycle, while `research_mvp` focuses on role-based collaboration, a forum-style runtime board, a separate training queue, and a longer-running baseline workflow with EDA, docs, and result tracking.
 
 ## Core Features
-
+- skills  for kaggle disscusion and notebook pull
 - one-task kickoff: give the team a Kaggle or ML task and let it keep iterating from there
 - `tmux`-native multi-agent runtime with fixed roles: `leader`, `researcher`, `trainer`
 - collaborative three-agent workflow instead of one general-purpose agent trying to do everything
@@ -74,6 +84,77 @@ Compared with Andrej Karpathy's `autoresearch`, this project is less about a sin
 - trend tracking across baseline versions
 - periodic strategy review every few versions instead of blind iteration
 - local-first, auditable operation with state persisted under `.research-mvp-data/`
+
+
+## Quick Start
+（Or you can just throw this project to your Codex and let it figure it out,<br>
+ then it can tell you what to do—or even do it for you directly.）
+
+----
+
+Prerequisites:
+
+- Python 3.11+
+- `tmux` sudo apt install tmux
+- `codex` CLI available on `PATH`
+
+please update codex  `sudo npm install -g @openai/codex@latest`  <br/>
+clone this repo and cd to the root directory, <br/>
+!!!important:  run codex first to allow it work in this dir, use gpt-5.4 medium or hign <br/>
+
+before start, you may need link your data dir to ./data 
+```
+-./data
+   -birdclef-2026/
+   -..
+```
+
+
+Start everything with the helper script:
+
+```bash
+./start_research_mvp.sh start
+```
+
+This starts:
+
+- the tmux-based multi-agent runtime
+- the runtime web app
+- the training queue service
+
+Open these pages:
+
+- runtime board: `http://127.0.0.1:8090/runtime`
+- this is the forum-style board where you can watch `leader`, `researcher`, and `trainer` talk, inspect the shared thread, and inject new ideas or corrections
+- training queue board: `http://127.0.0.1:8100/`
+- this is the clean execution board for submitted training jobs, queue state, and logs
+
+By default, `start_research_mvp.sh` binds the web services to `0.0.0.0`, so you can also open them from another machine using the host IP.
+
+Start by sending to leader:  "start recipe/recipe/"
+
+Attach to the tmux session if you want to see what they receive and doing:
+
+```bash
+python -m research_mvp.runtime_cli --config research_mvp/runtime.toml attach
+```
+
+Once attached, you can inspect what each agent is doing directly inside tmux.
+
+Useful tmux basics:
+
+- switch windows: `Ctrl-b` then window number, such as `0`, `1`, or `2`
+- next window: `Ctrl-b n`
+- previous window: `Ctrl-b p`
+- detach from tmux without stopping the runtime: `Ctrl-b d`
+
+The default mapping is usually:
+
+- window `0`: `leader`
+- window `1`: `researcher`
+- window `2`: `trainer`
+
+
 
 ## What Makes It Different
 
@@ -139,69 +220,6 @@ The intended split is simple:
 - `trainer` submits them to `train_service`
 - `leader` keeps the system moving
 
-## Quick Start
-
-Prerequisites:
-
-- Python 3.11+
-- `tmux` sudo apt install tmux
-- `codex` CLI available on `PATH`
-
-please update codex  `sudo npm install -g @openai/codex@latest`  <br/>
-clone this repo and cd to the root directory, <br/>
-!!!important:  run codex first to allow it work in this dir, use gpt-5.4 medium or hign <br/>
-
-before start, you may need link your data dir to ./data 
-```
--./data
-   -birdclef-2026/
-   -..
-```
-
-
-Start everything with the helper script:
-
-```bash
-./start_research_mvp.sh start
-```
-
-This starts:
-
-- the tmux-based multi-agent runtime
-- the runtime web app
-- the training queue service
-
-Open these pages:
-
-- runtime board: `http://127.0.0.1:8090/runtime`
-- this is the forum-style board where you can watch `leader`, `researcher`, and `trainer` talk, inspect the shared thread, and inject new ideas or corrections
-- training queue board: `http://127.0.0.1:8100/`
-- this is the clean execution board for submitted training jobs, queue state, and logs
-
-By default, `start_research_mvp.sh` binds the web services to `0.0.0.0`, so you can also open them from another machine using the host IP.
-
-Start by sending to leader:  "start recipe/recipe/"
-
-Attach to the tmux session if you want to see what they receive and doing:
-
-```bash
-python -m research_mvp.runtime_cli --config research_mvp/runtime.toml attach
-```
-
-Once attached, you can inspect what each agent is doing directly inside tmux.
-
-Useful tmux basics:
-
-- switch windows: `Ctrl-b` then window number, such as `0`, `1`, or `2`
-- next window: `Ctrl-b n`
-- previous window: `Ctrl-b p`
-- detach from tmux without stopping the runtime: `Ctrl-b d`
-
-The default mapping is usually:
-
-- window `0`: `leader`
-- window `1`: `researcher`
-- window `2`: `trainer`
 
 ## Typical Workflow
 
