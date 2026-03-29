@@ -29,6 +29,7 @@ from research_mvp.runtime_cli import (
     ensure_runtime_layout,
     inbox_files,
     load_config,
+    normalize_tmux_key,
     queue_message,
     read_json,
     refresh_status,
@@ -125,6 +126,7 @@ def _runtime_board_state(limit: int = 120) -> dict:
 
 
 def _send_to_tmux_target(project_id: str, target: str, content: str, *, buffer_prefix: str) -> None:
+    cfg = _runtime_cfg()
     tmp_path = None
     try:
         with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False, prefix=f"{buffer_prefix}-") as handle:
@@ -148,10 +150,16 @@ def _send_to_tmux_target(project_id: str, target: str, content: str, *, buffer_p
             logger.warning("Failed to paste tmux buffer project=%s target=%s", project_id, target)
             raise HTTPException(status_code=500, detail=paste.stderr.strip() or "Failed to paste tmux buffer")
 
-        time.sleep(0.5)
-        subprocess.run(["tmux", "send-keys", "-t", target, "Enter"], capture_output=True, text=True)
-        time.sleep(0.3)
-        subprocess.run(["tmux", "send-keys", "-t", target, "Enter"], capture_output=True, text=True)
+        if cfg.submit_delay_ms > 0:
+            time.sleep(cfg.submit_delay_ms / 1000)
+        for key in cfg.submit_keys:
+            subprocess.run(
+                ["tmux", "send-keys", "-t", target, normalize_tmux_key(key)],
+                capture_output=True,
+                text=True,
+            )
+            if cfg.submit_delay_ms > 0:
+                time.sleep(cfg.submit_delay_ms / 1000)
     finally:
         subprocess.run(["tmux", "delete-buffer", "-b", f"{buffer_prefix}-{project_id}"], capture_output=True, text=True)
         if tmp_path:

@@ -37,7 +37,7 @@ DEFAULT_TRAIN_QUEUE_IDLE_REMINDER_SECONDS = 3600
 RUNTIME_DEBUG = False
 DEFAULT_CODEX_MODEL = "gpt-5.4"
 DEFAULT_CODEX_COMMAND = ["codex", "-m", DEFAULT_CODEX_MODEL, "--dangerously-bypass-approvals-and-sandbox"]
-DEFAULT_SUBMIT_KEYS = ["Enter", "Enter"]
+DEFAULT_SUBMIT_KEYS = ["C-m", "C-m"]
 
 
 @dataclass
@@ -70,8 +70,8 @@ workdir = "{DEFAULT_REPO_ROOT}"
 runtime_root = "{DEFAULT_REPO_ROOT / '.research-mvp-data' / 'runtime'}"
 codex_command = ["codex", "-m", "{DEFAULT_CODEX_MODEL}", "--dangerously-bypass-approvals-and-sandbox"]
 agents = ["leader", "researcher", "trainer"]
-submit_keys = ["Enter", "Enter"]
-submit_delay_ms = 500
+submit_keys = ["C-m", "C-m"]
+submit_delay_ms = 1200
 stall_timeout_seconds = 600
 nudge_cooldown_seconds = 300
 train_queue_idle_reminder_seconds = 3600
@@ -104,7 +104,7 @@ def load_config(path: Path) -> RuntimeConfig:
         if isinstance(values, dict)
     }
     submit_keys = [str(key) for key in raw.get("submit_keys", DEFAULT_SUBMIT_KEYS)]
-    submit_delay_ms = int(raw.get("submit_delay_ms", 250))
+    submit_delay_ms = int(raw.get("submit_delay_ms", 1200))
     stall_timeout_seconds = int(raw.get("stall_timeout_seconds", DEFAULT_STALL_TIMEOUT_SECONDS))
     nudge_cooldown_seconds = int(raw.get("nudge_cooldown_seconds", DEFAULT_NUDGE_COOLDOWN_SECONDS))
     train_queue_idle_reminder_seconds = int(
@@ -294,6 +294,14 @@ def tmux_run(args: list[str], *, check: bool = True, capture: bool = True) -> su
     return result
 
 
+def normalize_tmux_key(key: str) -> str:
+    raw = key.strip()
+    lowered = raw.lower()
+    if lowered in {"enter", "return"}:
+        return "C-m"
+    return raw
+
+
 def session_exists(cfg: RuntimeConfig) -> bool:
     result = subprocess.run(
         ["tmux", "has-session", "-t", cfg.session_name],
@@ -451,10 +459,14 @@ def send_text_to_target(
             if cfg.submit_delay_ms > 0:
                 time.sleep(cfg.submit_delay_ms / 1000)
             for key in cfg.submit_keys:
-                tmux_key = "Enter" if key.lower() in {"enter", "return", "c-m", "c-j"} else key
+                tmux_key = normalize_tmux_key(key)
                 tmux_run(["send-keys", "-t", target, tmux_key])
                 if cfg.submit_delay_ms > 0:
                     time.sleep(cfg.submit_delay_ms / 1000)
+            retry_deadline = time.time() + 45.0
+            while pane_has_pending_paste(target) and time.time() < retry_deadline:
+                tmux_run(["send-keys", "-t", target, "C-m"])
+                time.sleep(1.5)
     finally:
         subprocess.run(["tmux", "delete-buffer", "-b", buffer_name], capture_output=True, text=True)
         Path(tmp_path).unlink(missing_ok=True)
@@ -469,6 +481,25 @@ def capture_target_output(target: str, lines: int = 120) -> str:
     if result.returncode != 0:
         return ""
     return result.stdout.strip()
+
+
+def wait_for_codex_ready(target: str, *, timeout_seconds: float = 20.0) -> bool:
+    deadline = time.time() + timeout_seconds
+    while time.time() < deadline:
+        output = capture_target_output(target, lines=60)
+        if (
+            "OpenAI Codex" in output
+            and "directory:" in output
+            and ("›" in output or "model:" in output)
+        ):
+            return True
+        time.sleep(0.5)
+    return False
+
+
+def pane_has_pending_paste(target: str) -> bool:
+    output = capture_target_output(target, lines=20)
+    return any(line.lstrip().startswith("› [Pasted Content") for line in output.splitlines())
 
 
 def mark_agent_status(cfg: RuntimeConfig, agent: str, status: str, last_event: str) -> None:
@@ -538,9 +569,10 @@ def launch_agent(cfg: RuntimeConfig, agent: str) -> None:
         if error_text:
             detail += f"\n\nLast log output:\n{error_text}"
         raise RuntimeError(detail)
+    wait_for_codex_ready(target)
     prompt = agent_bootstrap_prompt(cfg, agent)
     debug_print(f"bootstrap prompt for {agent}:\n{prompt}\n---")
-    send_text_to_target(cfg, target, prompt, buffer_name=f"bootstrap-{agent}", submit=False)
+    send_text_to_target(cfg, target, prompt, buffer_name=f"bootstrap-{agent}", submit=True)
     time.sleep(0.4)
     if not check_agent_alive(cfg, agent):
         error_text = capture_target_output(target)

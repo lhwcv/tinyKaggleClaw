@@ -1,8 +1,8 @@
 session_name = "research-runtime"
 codex_command = ["codex", "-m", "gpt-5.4", "--dangerously-bypass-approvals-and-sandbox"]
 agents = ["leader", "researcher", "trainer"]
-submit_keys = ["Enter", "Enter"]
-submit_delay_ms = 500
+submit_keys = ["C-m", "C-m"]
+submit_delay_ms = 1200
 stall_timeout_seconds = 600
 nudge_cooldown_seconds = 300
 train_queue_idle_reminder_seconds = 3600
