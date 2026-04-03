@@ -1,5 +1,5 @@
 session_name = "research-runtime"
-codex_command = ["codex", "-m", "gpt-5.4", "--dangerously-bypass-approvals-and-sandbox"]
+codex_command = ["claude-internal", "--dangerously-skip-permissions"]
 agents = ["leader", "researcher", "trainer"]
 submit_keys = ["C-m", "C-m"]
 submit_delay_ms = 1200

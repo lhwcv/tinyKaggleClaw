@@ -5,6 +5,11 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "${SCRIPT_DIR}"
 
+# support uv
+if [[ -f "${SCRIPT_DIR}/.venv/bin/activate" ]]; then
+  source "${SCRIPT_DIR}/.venv/bin/activate"
+fi
+
 LOG_DIR="${SCRIPT_DIR}/logs"
 PID_DIR="${LOG_DIR}/pids"
 RUNTIME_CONFIG="${SCRIPT_DIR}/research_mvp/runtime.toml"
@@ -110,11 +115,15 @@ stop_bg() {
 }
 
 start_runtime() {
+  local task_type_args=()
+  if [[ -n "${TASK_TYPE:-}" ]]; then
+    task_type_args=(--task-type "${TASK_TYPE}")
+  fi
   start_bg \
     "runtime_cli up" \
     "${runtime_pid_file}" \
     "${runtime_log}" \
-    python -m research_mvp.runtime_cli --config "${RUNTIME_CONFIG}" up
+    python -m research_mvp.runtime_cli --config "${RUNTIME_CONFIG}" up "${task_type_args[@]+"${task_type_args[@]}"}"
 }
 
 stop_runtime() {
@@ -222,10 +231,14 @@ stop_all() {
 usage() {
   cat <<'EOF'
 Usage:
-  ./start_research_mvp.sh start
+  ./start_research_mvp.sh start [task_type]
   ./start_research_mvp.sh stop
-  ./start_research_mvp.sh restart
+  ./start_research_mvp.sh restart [task_type]
   ./start_research_mvp.sh status
+
+Examples:
+  ./start_research_mvp.sh start          # default (kaggle)
+  ./start_research_mvp.sh start quant    # quant strategy optimization
 
 Optional env:
   APP_HOST=0.0.0.0
@@ -236,6 +249,8 @@ EOF
 }
 
 cmd="${1:-start}"
+TASK_TYPE="${2:-}"
+export TASK_TYPE
 
 case "${cmd}" in
   start)

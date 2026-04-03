@@ -34,6 +34,7 @@ DEFAULT_AGENTS = ("leader", "researcher", "trainer")
 DEFAULT_STALL_TIMEOUT_SECONDS = 600
 DEFAULT_NUDGE_COOLDOWN_SECONDS = 300
 DEFAULT_TRAIN_QUEUE_IDLE_REMINDER_SECONDS = 3600
+DEFAULT_DELIVERY_COOLDOWN_SECONDS = 20
 RUNTIME_DEBUG = False
 DEFAULT_CODEX_MODEL = "gpt-5.4"
 DEFAULT_CODEX_COMMAND = ["codex", "-m", DEFAULT_CODEX_MODEL, "--dangerously-bypass-approvals-and-sandbox"]
@@ -56,6 +57,8 @@ class RuntimeConfig:
     stall_timeout_seconds: int
     nudge_cooldown_seconds: int
     train_queue_idle_reminder_seconds: int
+    delivery_cooldown_seconds: int
+    task_type: str
 
 
 def debug_print(message: str) -> None:
@@ -110,6 +113,10 @@ def load_config(path: Path) -> RuntimeConfig:
     train_queue_idle_reminder_seconds = int(
         raw.get("train_queue_idle_reminder_seconds", DEFAULT_TRAIN_QUEUE_IDLE_REMINDER_SECONDS)
     )
+    delivery_cooldown_seconds = int(
+        raw.get("delivery_cooldown_seconds", DEFAULT_DELIVERY_COOLDOWN_SECONDS)
+    )
+    task_type = str(raw.get("task_type", ""))
     return RuntimeConfig(
         config_path=path,
         repo_root=repo_root,
@@ -125,6 +132,8 @@ def load_config(path: Path) -> RuntimeConfig:
         stall_timeout_seconds=stall_timeout_seconds,
         nudge_cooldown_seconds=nudge_cooldown_seconds,
         train_queue_idle_reminder_seconds=train_queue_idle_reminder_seconds,
+        delivery_cooldown_seconds=delivery_cooldown_seconds,
+        task_type=task_type,
     )
 
 
@@ -316,7 +325,12 @@ def agent_bootstrap_prompt(cfg: RuntimeConfig, agent: str) -> str:
     agents_md = cfg.repo_root / "AGENTS.md"
     skill_md = cfg.repo_root / "research_mvp" / "skills" / "runtime-communication" / "SKILL.md"
     identity_md = cfg.repo_root / "research_mvp" / "identities" / f"{agent}.md"
-    shared = f"""You are the {agent} agent in a three-agent ML engineering runtime.
+    if cfg.task_type:
+        task_identity = cfg.repo_root / "research_mvp" / "identities" / cfg.task_type / f"{agent}.md"
+        if task_identity.exists():
+            identity_md = task_identity
+    task_context = f"task_type={cfg.task_type}" if cfg.task_type else "default"
+    shared = f"""You are the {agent} agent in a three-agent research runtime ({task_context}).
 
 Runtime rules:
 - You are running inside tmux session `{cfg.session_name}`.
@@ -336,8 +350,7 @@ Runtime rules:
   - {skill_md}
   - {identity_md}
 - If the human request is to start a task under `recipe/<name>/`, first read `recipe/<name>/data.md`, `recipe/<name>/overview.md`, and `recipe/<name>/start_prompt.md`.
-- Treat `recipe/<name>/` tasks as Kaggle-style competition tasks by default unless the recipe clearly says otherwise.
-- For a new `recipe/<name>/` task, do EDA first. Put EDA scripts, notes, and charts under `eda/`, then only begin baseline and training iteration after the competition setup, metric, submission format, and main risks are well understood.
+- Follow the instructions in your identity file (`{identity_md}`) for domain-specific rules and workflow.
 - Do not hand-edit `thread.jsonl`.
 - If you need one specific agent to receive a message, use `{cli_cmd} delegate --from <sender> --to <recipient> "..."` so the message lands in both the shared thread and the target inbox.
 - Use shared-thread updates for visibility and `all` broadcasts, not as a substitute for directed inbox delivery.
@@ -437,7 +450,70 @@ Inbox behavior:
 - Do not perform runtime control-plane operations unless the human explicitly asks.
 """,
     }
-    prompt = shared + "\n" + role_specific.get(agent, "Role:\n- Follow leader instructions and keep the shared thread updated.\n")
+    if cfg.task_type:
+        task_role_specific = {
+            "leader": """Role:
+- Act as the orchestrator. Read your identity file for detailed domain-specific rules.
+- Read human messages from the shared thread and your inbox.
+- Check researcher and trainer progress regularly.
+- Decide who should act next and communicate through the shared thread or inbox files.
+- You are responsible for keeping the system moving without waiting for manual nudges.
+- Before planning, re-check the role boundaries in the three identity files so you delegate according to each agent's scope.
+- Use the working-directory layout consistently: code in `src/baseline/`, experiment scripts and configs in `baseline/`, data in `data/`, outputs in `output/`.
+- Use `docs/` for experiment design notes and result summaries.
+- Default behavior is continuous iteration. Finishing one experiment version does not mean the overall task is done.
+- After each version closeout, immediately choose the next action.
+
+Delegation protocol:
+- Do not rely only on `leader -> all` when you want work to happen.
+- When assigning work, send one direct inbox message per target agent with the runtime CLI.
+- Use this exact pattern for delegation:
+  `<runtime-cli> delegate --from leader --to researcher "..."`,
+  `<runtime-cli> delegate --from leader --to trainer "..."`,
+- After queueing direct messages, add one shared thread summary for humans and other agents.
+- When one experiment version is complete and worth preserving, make a git commit covering the relevant `src/` and `scripts/` changes.
+
+Control-plane restrictions:
+- Do not run `<runtime-cli> up`, `<runtime-cli> attach`, or `<runtime-cli> supervise` from inside the runtime.
+- Do not use `<runtime-cli> status` for routine planning; it may be stale or sandbox-blocked.
+- Do not try to repair tmux or restart the runtime unless the human explicitly asks.
+""",
+            "researcher": """Role:
+- Produce plans, code changes, configs, scripts, experiment designs, implementation guidance, and minimal dry-run validation.
+- Read your identity file for detailed domain-specific rules and conventions.
+- For `recipe/<name>/` tasks, begin with recipe reading and EDA before proposing baseline iterations.
+- Report results back for leader review.
+
+Inbox behavior:
+- Treat direct inbox messages as executable assignments.
+- Keep one formal version runner script per version under `baseline/`.
+- Own the minimal dry run for new code. That dry run should validate startup and wiring without drifting into long execution.
+- After designing a version, write the design note to `docs/`.
+- After finishing a meaningful chunk, report back to leader by default with `<runtime-cli> delegate --from researcher --to leader "..."`. Use `all` only for shared milestones.
+- Do not perform runtime control-plane operations unless the human explicitly asks.
+""",
+            "trainer": """Role:
+- Submit scripts to train_service and handle returned results.
+- Read your identity file for detailed domain-specific rules and conventions.
+- Record metrics, failures, artifacts, and returned job results clearly.
+- Do not submit jobs while a `recipe/<name>/` task is still in the recipe-reading or EDA phase.
+
+Inbox behavior:
+- Treat direct inbox messages as executable assignments.
+- After finishing a meaningful chunk, report back to leader by default. Use `all` only for shared milestones.
+- Do not modify researcher-owned code, configs, or scripts. If they are wrong, report the issue to leader.
+- Do not run local dry runs by default. Expect researcher to complete the minimal dry run first.
+- After results come back from train_service, write the version result summary to `docs/`.
+- Before claiming train_service is down, first verify it with a concrete request such as `curl --noproxy '*' -sS http://127.0.0.1:8100/queue`.
+- For localhost endpoints, bypass proxy settings explicitly. Prefer `curl --noproxy '*' ...`.
+- After successful submission, report the returned `train_task_id` back to leader with `<runtime-cli> delegate --from trainer --to leader "..."`.
+- Do not perform runtime control-plane operations unless the human explicitly asks.
+""",
+        }
+        role_text = task_role_specific.get(agent, "Role:\n- Follow leader instructions and keep the shared thread updated.\n")
+    else:
+        role_text = role_specific.get(agent, "Role:\n- Follow leader instructions and keep the shared thread updated.\n")
+    prompt = shared + "\n" + role_text
     return prompt.replace("<runtime-cli>", cli_cmd)
 
 
@@ -463,10 +539,11 @@ def send_text_to_target(
                 tmux_run(["send-keys", "-t", target, tmux_key])
                 if cfg.submit_delay_ms > 0:
                     time.sleep(cfg.submit_delay_ms / 1000)
-            retry_deadline = time.time() + 45.0
-            while pane_has_pending_paste(target) and time.time() < retry_deadline:
-                tmux_run(["send-keys", "-t", target, "C-m"])
+            for _retry in range(3):
                 time.sleep(1.5)
+                if not pane_has_pending_paste(target):
+                    break
+                tmux_run(["send-keys", "-t", target, "C-m"])
     finally:
         subprocess.run(["tmux", "delete-buffer", "-b", buffer_name], capture_output=True, text=True)
         Path(tmp_path).unlink(missing_ok=True)
@@ -493,13 +570,24 @@ def wait_for_codex_ready(target: str, *, timeout_seconds: float = 20.0) -> bool:
             and ("›" in output or "model:" in output)
         ):
             return True
+        if (
+            "Bypassing Permissions" in output
+            or "Press Esc twice" in output
+            or "Run claude-internal --continue or claude-internal --resume" in output
+            or "shift+tab" in output.lower()
+        ):
+            return True
         time.sleep(0.5)
     return False
 
 
 def pane_has_pending_paste(target: str) -> bool:
     output = capture_target_output(target, lines=20)
-    return any(line.lstrip().startswith("› [Pasted Content") for line in output.splitlines())
+    for line in output.splitlines():
+        stripped = line.lstrip()
+        if "[Pasted text " in stripped or "[Pasted Content " in stripped:
+            return True
+    return False
 
 
 def mark_agent_status(cfg: RuntimeConfig, agent: str, status: str, last_event: str) -> None:
@@ -539,6 +627,7 @@ def mark_agent_status(cfg: RuntimeConfig, agent: str, status: str, last_event: s
 def launch_agent(cfg: RuntimeConfig, agent: str) -> None:
     target = agent_target(cfg, agent)
     env = {
+        "PATH": os.environ.get("PATH", "/usr/local/bin:/usr/bin:/bin"),
         "RESEARCH_MVP_AGENT": agent,
         "RESEARCH_MVP_RUNTIME_DIR": str(cfg.runtime_root),
         **cfg.env,
@@ -615,6 +704,8 @@ def cmd_init_config(args: argparse.Namespace) -> int:
 
 def cmd_up(args: argparse.Namespace) -> int:
     cfg = load_config(Path(args.config).expanduser().resolve())
+    if getattr(args, "task_type", "") and args.task_type:
+        cfg = RuntimeConfig(**{**cfg.__dict__, "task_type": args.task_type})
     require_tmux()
     require_command(cfg.codex_command[0])
     ensure_runtime_layout(cfg)
@@ -795,6 +886,23 @@ def cmd_inbox_read(args: argparse.Namespace) -> int:
     return 0
 
 
+def _agent_delivery_cooldown_ok(cfg: RuntimeConfig, agent: str) -> tuple[bool, float]:
+    """Check if enough time has passed since the last inbox delivery to this agent."""
+    paths = runtime_dirs(cfg)
+    agent_file = paths["agents"] / f"{agent}.json"
+    data = read_json(agent_file, {})
+    if not isinstance(data, dict):
+        return True, 0.0
+    last_delivered = str(data.get("last_inbox_delivered_at", ""))
+    if not last_delivered:
+        return True, 0.0
+    try:
+        elapsed = (datetime.now(timezone.utc) - datetime.fromisoformat(last_delivered)).total_seconds()
+        return elapsed >= cfg.delivery_cooldown_seconds, elapsed
+    except (ValueError, TypeError):
+        return True, 0.0
+
+
 def deliver_inbox_message(cfg: RuntimeConfig, agent: str, path: Path) -> tuple[bool, str]:
     try:
         payload = read_json(path, {})
@@ -808,6 +916,15 @@ def deliver_inbox_message(cfg: RuntimeConfig, agent: str, path: Path) -> tuple[b
         return False, "already delivered"
     if not session_exists(cfg) or not check_agent_alive(cfg, agent):
         return False, "target not running"
+
+    cooldown_ok, elapsed = _agent_delivery_cooldown_ok(cfg, agent)
+    if not cooldown_ok:
+        return False, f"delivery cooldown ({elapsed:.0f}s/{cfg.delivery_cooldown_seconds}s), defer"
+
+    target = agent_target(cfg, agent)
+    if pane_has_pending_paste(target):
+        tmux_run(["send-keys", "-t", target, "C-m"])
+        return False, "target has pending paste, nudged C-m, defer"
 
     sender = str(payload.get("from", "human"))
     timestamp = str(payload.get("timestamp", ""))
@@ -828,10 +945,17 @@ def deliver_inbox_message(cfg: RuntimeConfig, agent: str, path: Path) -> tuple[b
     ]
     envelope = "\n".join(envelope_parts) + f"\n\n{content}"
     send_text_to_target(cfg, agent_target(cfg, agent), envelope, buffer_name=f"deliver-{agent}")
-    payload["delivered_at"] = now_iso()
+    delivered_ts = now_iso()
+    payload["delivered_at"] = delivered_ts
     payload["delivery_status"] = "delivered"
     write_json(path, payload)
     mark_agent_status(cfg, agent, "online", f"delivered inbox message {path.name}")
+    paths = runtime_dirs(cfg)
+    agent_file = paths["agents"] / f"{agent}.json"
+    agent_data = read_json(agent_file, {})
+    if isinstance(agent_data, dict):
+        agent_data["last_inbox_delivered_at"] = delivered_ts
+        write_json(agent_file, agent_data)
     detail = f"delivered {sender} -> {agent} msg={path.name}"
     return True, detail
 
@@ -1290,6 +1414,7 @@ def supervise_once(cfg: RuntimeConfig) -> list[str]:
             delivered, detail = deliver_inbox_message(cfg, agent, path)
             if delivered:
                 events.append(detail)
+                break
             elif detail.startswith("corrupt inbox payload"):
                 events.append(f"{agent}:{detail}")
     events.extend(remind_leader_if_idle(cfg))
@@ -1329,6 +1454,7 @@ def build_parser() -> argparse.ArgumentParser:
     up = sub.add_parser("up", help="Start the configured tmux runtime and enter supervise by default")
     up.add_argument("--no-supervise", action="store_true", help="Start runtime without entering the supervisor loop")
     up.add_argument("--interval", type=float, default=3.0, help="Supervisor polling interval in seconds")
+    up.add_argument("--task-type", default="", help="Task type override (e.g. quant)")
     up.set_defaults(func=cmd_up)
 
     status = sub.add_parser("status", help="Show tmux/runtime status")
