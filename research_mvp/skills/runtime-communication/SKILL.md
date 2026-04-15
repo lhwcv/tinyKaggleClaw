@@ -1,11 +1,15 @@
 ---
-name: Runtime Communication
-description: >
-  Use this skill when working inside the research_mvp tmux runtime with fixed agents
-  (`leader`, `researcher`, `trainer`) and you need to read shared thread
-  messages, inspect per-agent inboxes, delegate tasks between agents, or follow the
-  repository's runtime communication contract. This skill is specifically for the
-  file-backed runtime CLI under `research_mvp/runtime_cli.py`.
+name: runtime-communication
+description: "Use this skill when working inside the research_mvp tmux runtime with fixed agents (leader, researcher, trainer) and you need to read shared thread messages, inspect per-agent inboxes, delegate tasks between agents, or follow the repository's runtime communication contract. Specifically for the file-backed runtime CLI under research_mvp/runtime_cli.py."
+user-invocable: true
+triggers:
+  - runtime communication
+  - read the shared thread
+  - delegate to researcher
+  - send to trainer
+  - check agent inbox
+  - runtime_cli
+  - leader to researcher message
 ---
 
 # Runtime Communication
